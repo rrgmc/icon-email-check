@@ -358,6 +358,7 @@ void MainWindow::showAbout()
 {
     QMessageBox::about(this, tr("About %1").arg(QApplication::applicationDisplayName()),
                        tr("<h3>%1 %2</h3><p>Counts unread email in the tray.</p>"
+                          "<p>Author: Rangel Reale &lt;<a href=\"mailto:realerangel@gmail.com\">realerangel@gmail.com</a>&gt;</p>"
                           "<p><a href=\"https://github.com/rrgmc/icon-email-check\">github.com/rrgmc/icon-email-check</a></p>"
                           "<p><a href=\"https://rrgmc.github.io/icon-email-check/privacy.html\">Privacy policy</a></p>")
                            .arg(QApplication::applicationDisplayName(), QApplication::applicationVersion()));

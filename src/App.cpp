@@ -131,6 +131,11 @@ void App::rebuildMenu()
     check->setEnabled(any && !m_monitor->isChecking());
     connect(check, &QAction::triggered, m_monitor, &MailMonitor::checkAllNow);
     m_menu->addAction(tr("Accounts and Settings…"), m_window, &MainWindow::showAndRaise);
+    // The window comes first, so the About window has a parent on screen.
+    m_menu->addAction(tr("About…"), m_window, [this] {
+        m_window->showAndRaise();
+        m_window->showAbout();
+    });
     m_menu->addSeparator();
     // Under a modal dialog, which may hold unsaved input, the dialog comes to
     // the front instead.
