@@ -10,10 +10,11 @@
 #       secrets: inherit
 #
 # The build jobs hold only the Google OAuth client, which the app needs at
-# build time and which ships inside it anyway. On macOS, a separate job signs
-# the finished bundle and makes the disk image; it runs nothing from the build,
-# and only it reads the signing secrets. Its
-# artifact, and those of Windows and Linux, are named icon-email-check-<OS>.
+# build time and which ships inside it anyway. On macOS, the build job makes
+# the disk image itself, signed ad hoc, unless macos-signing is developer-id.
+# Then a separate job signs the finished bundle with the Developer ID and
+# makes the disk image; it runs nothing from the build, and only it reads the
+# signing secrets. The packages are the artifacts icon-email-check-<OS>.
 
 name: Build
 
@@ -185,24 +186,32 @@ jobs:
         if: runner.os == 'Linux'
         run: cd build/ci && cpack
 
-      # A zip would lose the symbolic links inside Qt's frameworks, so the
-      # bundle travels as a tar file.
+      # Without the Developer ID, the bundle that the install signed ad hoc
+      # goes straight into the disk image, so no second macOS job waits for a
+      # runner.
+      - name: Make the disk image (macOS)
+        if: runner.os == 'macOS' && inputs.macos-signing != 'developer-id'
+        run: sh tools/package-macos.sh build/ci/install "build/ci/icon-email-check-$VERSION-macos.dmg"
+
+      # For the signing job. A zip would lose the symbolic links inside Qt's
+      # frameworks, so the bundle travels as a tar file.
       - name: Pack the bundle (macOS)
-        if: runner.os == 'macOS'
+        if: runner.os == 'macOS' && inputs.macos-signing == 'developer-id'
         run: tar -cf build/ci/macos-bundle.tar -C build/ci/install .
 
       - uses: actions/upload-artifact@v7
-        if: runner.os != 'macOS'
+        if: runner.os != 'macOS' || inputs.macos-signing != 'developer-id'
         with:
           name: icon-email-check-${{ runner.os }}
           path: |
             build/ci/icon-email-check-*-win64.exe
+            build/ci/icon-email-check-*-macos.dmg
             build/ci/icon-email-check_*.deb
           if-no-files-found: error
           retention-days: 7
 
       - uses: actions/upload-artifact@v7
-        if: runner.os == 'macOS'
+        if: runner.os == 'macOS' && inputs.macos-signing == 'developer-id'
         with:
           name: macos-bundle
           path: build/ci/macos-bundle.tar
@@ -210,11 +219,13 @@ jobs:
           retention-days: 1
 
   # Runs nothing from the build, and reads no cache, so nothing the build ran
-  # can reach the certificate. The bundle is data here.
+  # can reach the certificate. The bundle is data here. Only for the Developer
+  # ID; otherwise the build job made the disk image.
   sign-macos:
     needs: [prepare, build]
+    if: inputs.macos-signing == 'developer-id'
     runs-on: macos-15
-    environment: ${{ inputs.macos-signing == 'developer-id' && 'release' || '' }}
+    environment: release
     env:
       SIGNING: ${{ inputs.macos-signing }}
       DMG: icon-email-check-${{ needs.prepare.outputs.version }}-macos.dmg
