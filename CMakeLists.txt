@@ -1,5 +1,16 @@
 cmake_minimum_required(VERSION 3.21)
 
+# Lets CMAKE_MSVC_DEBUG_INFORMATION_FORMAT below take effect. It must come
+# before project().
+if(POLICY CMP0141)
+    cmake_policy(SET CMP0141 NEW)
+endif()
+# install() DESTINATION paths such as ./bin are normalized.
+if(POLICY CMP0177)
+    cmake_policy(SET CMP0177 NEW)
+endif()
+
+# The release workflow passes the tag's version, for example -DIEC_VERSION=1.2.0.
 set(IEC_VERSION "0.1.0" CACHE STRING "The app's version, as X.Y.Z")
 if(NOT IEC_VERSION MATCHES "^[0-9]+\.[0-9]+\.[0-9]+$")
     message(FATAL_ERROR "IEC_VERSION is \"${IEC_VERSION}\", not X.Y.Z")
@@ -19,9 +30,15 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# ccache, where it is installed, shares compiling between worktrees and CI
+# runs. It cannot cache MSVC's separate debug files, so objects hold their
+# debug information.
 find_program(IEC_CCACHE ccache)
 if(IEC_CCACHE)
+    message(STATUS "Compiling through ${IEC_CCACHE}")
     set(CMAKE_CXX_COMPILER_LAUNCHER "${IEC_CCACHE}")
+    set(CMAKE_OBJCXX_COMPILER_LAUNCHER "${IEC_CCACHE}")
+    set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>")
 endif()
 
 find_package(Qt6 6.8 REQUIRED COMPONENTS Core Gui Widgets Network Svg Test)
@@ -68,10 +85,11 @@ endif()
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(Dependencies)
 include(Deploy)
+include(Install)
 
 function(iec_set_warnings target)
     if(MSVC)
-        target_compile_options(${target} PRIVATE /W4 /permissive-)
+        target_compile_options(${target} PRIVATE /W4 /permissive- /utf-8)
         if(IEC_WERROR)
             target_compile_options(${target} PRIVATE /WX)
         endif()

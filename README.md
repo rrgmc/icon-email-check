@@ -56,9 +56,48 @@ cmake --build --preset dev
 ctest --preset dev
 ```
 
-The presets are `dev` (Debug), `release`, and `ci` (Release with warnings as errors). On Windows, run these from a Visual Studio developer prompt.
+The presets are `dev` (Debug), `release`, and `ci` (Release with warnings as errors). On Windows, `tools/build.ps1` does all of it: it downloads Qt if needed, enters the Visual Studio 2022 developer shell, then builds and tests the `dev` preset. `tools/setup-qt.sh` and `tools/setup-qt.ps1` download the Qt that CI uses; they need [uv](https://docs.astral.sh/uv/).
 
-Each build makes a copy of the app with the Qt files it needs in `build/<preset>/bin`, so it starts without Qt on `PATH`. On macOS that folder holds the app bundle. `cmake --install build/release --prefix <folder>` installs the app.
+Each build makes a copy of the app with the Qt files it needs in `build/<preset>/bin`, so it starts without Qt on `PATH`. On macOS that folder holds the app bundle.
+
+To make the package of a build, install it and run CPack in its build folder. The install folder must be an absolute path. On Windows, `tools/build.ps1 -Preset release -Package` does all of it, and needs [NSIS](https://nsis.sourceforge.io/).
+
+```sh
+cmake --install build/release --component App --prefix "$PWD/build/release/install"
+python3 tools/check-package.py build/release/install
+cd build/release && cpack
+```
+
+The packages are:
+
+- **Windows:** `icon-email-check-<version>-win64.exe`, a setup. Its last page offers to run the app and to start it at sign-in.
+- **macOS:** `icon-email-check-<version>-macos.dmg`, a disk image with a universal app for Apple silicon and Intel. Drag the app to Applications.
+- **Linux:** `icon-email-check_<version>_amd64.deb`. The app and its own Qt go in `/opt/icon-email-check`, with `icon-email-check` in `/usr/bin` and an entry in the applications menu. GNOME shows tray icons only with the AppIndicator extension.
+
+## Continuous integration and releases
+
+`.github/workflows/ci.yml` builds, tests and packages every push to `master` and every pull request on Windows, macOS and Linux. A change that touches only Markdown files builds nothing. Each run keeps its packages as artifacts for a week. They are not signed with a Developer ID, so on macOS the app opens only after **Open Anyway** in **System Settings > Privacy & Security**.
+
+Pushing a tag `vX.Y.Z` publishes a release with the three packages, and `vX.Y.Z-rc.N` a prerelease. The tag gives the version, so it need not match `IEC_VERSION` in `CMakeLists.txt`. The release notes are the version's section of [CHANGELOG.md](CHANGELOG.md), or GitHub's list of changes when it has none.
+
+```sh
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+To make the release again, run the Release workflow by hand from its tag, under **Use workflow from**.
+
+The build jobs hold no secrets. On macOS a separate job signs the finished bundle and makes the disk image. For a release, it signs with a Developer ID and notarises the disk image when the GitHub environment `release` has these secrets; without them it signs ad hoc and the run shows a warning:
+
+| Secret | What it holds |
+| --- | --- |
+| `MACOS_CERTIFICATE_P12` | The "Developer ID Application" certificate with its private key, exported from Keychain Access as a .p12 file, in base64: `base64 -i certificate.p12` |
+| `MACOS_CERTIFICATE_PASSWORD` | The password of that .p12 file |
+| `NOTARY_API_KEY` | An App Store Connect API key (the contents of its .p8 file), from **Users and Access > Integrations** |
+| `NOTARY_API_KEY_ID` | That key's ID |
+| `NOTARY_API_ISSUER` | The issuer ID shown above the keys |
+
+Create the environment under **Settings > Environments**, and limit its deployment to tags `v*`, so only a release can read the secrets. The Windows setup is not signed, so Windows SmartScreen warns about it the first time.
 
 On macOS, the build signs the bundle with a code signing certificate when one is available, so the keychain knows each build as the same app and does not ask again for access after each build. Set `IEC_MACOS_SIGN_IDENTITY` to the name of one of your certificates (`security find-identity -v -p codesigning` lists them). Without one, the app is signed ad hoc.
 

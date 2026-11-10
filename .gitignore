@@ -10,3 +10,6 @@
 .vscode/
 *.user
 .DS_Store
+
+# Qt downloaded by tools/setup-qt when IEC_QT_ROOT is not set
+/.qt/

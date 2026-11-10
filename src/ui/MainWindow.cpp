@@ -27,6 +27,8 @@
 #include <QUrl>
 #include <QVBoxLayout>
 
+#include <algorithm>
+
 namespace iec {
 
 namespace {

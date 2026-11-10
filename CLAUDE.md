@@ -33,4 +33,5 @@ Every change happens in a Git worktree with its own branch, so several sessions 
 
 - Each worktree has its own build folder, `build/<preset>`. Configure it once: `cmake --preset dev -DCMAKE_PREFIX_PATH=<Qt>`. On this machine Qt is `~/Qt/6.8.3/macos`.
 - Build with `cmake --build --preset dev -j 4` and test with `ctest --preset dev`. Keep the job count at 4: other sessions may build at the same time.
+- `.github/workflows/build.yml` builds, tests and packages on Windows, macOS and Linux; `ci.yml` runs it for every change, and `release.yml` for a tag `vX.Y.Z`, then publishes the release. Packaging is in `cmake/Install.cmake`, and `tools/check-package.py` lists the files each package must hold. Add a line to the `Unreleased` section of `CHANGELOG.md` for each change a user would notice; a release renames that section to its version.
 - Keep platform-specific code in `src/platform/`. Development and verification happen on macOS. Say so when a change touches Windows or Linux code, since it was not built here.

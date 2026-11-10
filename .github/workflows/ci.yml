@@ -1,0 +1,29 @@
+# Builds, tests and packages every change on Windows, macOS and Linux. The
+# packages are kept for a week as the run's artifacts. They are not signed with
+# a Developer ID; release.yml makes the signed ones.
+
+name: CI
+# Pull request runs lead with the number. Other runs keep GitHub's default
+# title, because an empty run-name means the default.
+run-name: ${{ github.event_name == 'pull_request' && format('#{0} {1}', github.event.pull_request.number, github.event.pull_request.title) || '' }}
+
+on:
+  push:
+    branches: [master]
+    paths-ignore: ['**.md']
+  pull_request:
+    paths-ignore: ['**.md']
+  workflow_dispatch:
+
+# A new push to a pull request cancels its run that is still going. Runs on
+# master all finish, since they fill the caches that pull requests read.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml

@@ -1,0 +1,88 @@
+# Pushing a tag vX.Y.Z publishes the release, and vX.Y.Z-rc.N a prerelease,
+# with the Windows setup, the macOS disk image and the Linux .deb package. The
+# tag gives the version. The build jobs hold no secrets. On macOS, a separate
+# job signs and notarises the disk image with the Developer ID, from the
+# secrets of the environment "release". To redo a release, run this workflow
+# by hand from its tag, under "Use workflow from".
+
+name: Release
+run-name: Release ${{ github.ref_name }}
+
+on:
+  push:
+    tags:
+      - 'v[0-9]*.[0-9]*.[0-9]*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    if: github.ref_type == 'tag'
+    uses: ./.github/workflows/build.yml
+    with:
+      release-tag: ${{ github.ref_name }}
+      macos-signing: developer-id
+    # Only the signing job reads them.
+    secrets: inherit
+
+  publish:
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: icon-email-check-*
+          merge-multiple: true
+          path: packages
+
+      # Only the changelog, for the release's notes.
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: CHANGELOG.md
+          sparse-checkout-cone-mode: false
+          path: app
+          persist-credentials: false
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          ls -l packages
+          count=$(ls packages | wc -l)
+          if [ "$count" -ne 3 ]; then
+            echo "::error::Expected 3 packages, found $count."
+            exit 1
+          fi
+          if ! gh release view "$TAG" > /dev/null 2>&1; then
+            flags=(--verify-tag)
+            if [[ "$TAG" == *-rc.* ]]; then
+              flags+=(--prerelease)
+            fi
+            # The notes are the version's section of CHANGELOG.md, in the
+            # format of Keep a Changelog, or else GitHub's list of changes. A
+            # prerelease vX.Y.Z-rc.N takes the section of X.Y.Z.
+            version="${TAG#v}"
+            version="${version%%-*}"
+            notes="$RUNNER_TEMP/notes.md"
+            if [ -f app/CHANGELOG.md ]; then
+              awk -v heading="## [$version]" '
+                index($0, heading) == 1 { on = 1; next }
+                on && /^## \[/ { exit }
+                on && /^\[[^]]+\]: / { next }
+                on { print }
+              ' app/CHANGELOG.md > "$notes"
+            fi
+            if [ -s "$notes" ] && grep -q '[^[:space:]]' "$notes"; then
+              flags+=(--notes-file "$notes")
+            else
+              flags+=(--generate-notes)
+            fi
+            gh release create "$TAG" --title "Icon Email Check $TAG" "${flags[@]}"
+          fi
+          gh release upload "$TAG" packages/* --clobber

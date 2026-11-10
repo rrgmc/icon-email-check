@@ -77,20 +77,5 @@ target_link_libraries(IconEmailCheck PRIVATE iec_core)
 iec_set_warnings(IconEmailCheck)
 iec_add_bin_folder(IconEmailCheck)
 
-# Installs the app: the bundle on macOS; the executable, a .desktop file and
-# the icon on Linux; the executable on Windows. Qt's deploy script copies the
-# Qt libraries next to it on macOS and Windows.
-include(GNUInstallDirs)
-install(TARGETS IconEmailCheck
-    BUNDLE DESTINATION .
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-if(UNIX AND NOT APPLE)
-    install(FILES "${PROJECT_SOURCE_DIR}/resources/app/icon-email-check.desktop"
-        DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
-    install(FILES "${PROJECT_SOURCE_DIR}/resources/icons/app.svg"
-        DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps
-        RENAME icon-email-check.svg)
-else()
-    qt_generate_deploy_app_script(TARGET IconEmailCheck OUTPUT_SCRIPT deploy_script NO_UNSUPPORTED_PLATFORM_ERROR)
-    install(SCRIPT "${deploy_script}")
-endif()
+# The install and the packages: cmake/Install.cmake.
+iec_add_install(IconEmailCheck)

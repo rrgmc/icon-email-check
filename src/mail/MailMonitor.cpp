@@ -7,6 +7,8 @@
 #include <QPointer>
 #include <QSet>
 
+#include <algorithm>
+
 namespace iec {
 
 namespace {

@@ -20,6 +20,8 @@
 #include <QUuid>
 #include <QVBoxLayout>
 
+#include <iterator>
+
 namespace iec {
 
 namespace {
