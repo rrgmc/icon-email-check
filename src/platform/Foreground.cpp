@@ -1,6 +1,6 @@
 #include "platform/Foreground.h"
 
-#include <QApplication>
+#include <QtGlobal>
 
 #if defined(Q_OS_WIN)
 #ifndef NOMINMAX
@@ -20,17 +20,6 @@ void allowForegroundFor(qint64 pid)
     AllowSetForegroundWindow(pid > 0 ? DWORD(pid) : ASFW_ANY);
 #else
     Q_UNUSED(pid);
-#endif
-}
-
-bool appIsInFront()
-{
-#if defined(Q_OS_WIN)
-    DWORD process = 0;
-    GetWindowThreadProcessId(GetForegroundWindow(), &process);
-    return process == GetCurrentProcessId();
-#else
-    return QApplication::activeWindow() != nullptr;
 #endif
 }
 

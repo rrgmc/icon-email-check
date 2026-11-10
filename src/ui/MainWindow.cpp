@@ -4,7 +4,6 @@
 #include "accounts/SecretStore.h"
 #include "mail/MailMonitor.h"
 #include "platform/ActiveSpace.h"
-#include "platform/Foreground.h"
 #include "platform/LoginItem.h"
 #include "platform/Tray.h"
 #include "ui/AccountDialog.h"
@@ -394,15 +393,6 @@ void MainWindow::hideToTray()
     }
     hide();
     m_tray->setDockIconVisible(false);
-}
-
-void MainWindow::toggleVisible()
-{
-    // A modal dialog stays with its window, so it only comes to the front.
-    if (isVisible() && !isMinimized() && platform::appIsInFront() && !QApplication::activeModalWidget())
-        hideToTray();
-    else
-        showAndRaise();
 }
 
 void MainWindow::saveState()

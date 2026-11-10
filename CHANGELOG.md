@@ -11,7 +11,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). A r
 
 ### Changed
 
-- On macOS, a left click on the menu bar icon opens the menu, like a right click, instead of the Accounts and Settings window. The window is in the menu.
+- A left click on the tray icon opens its menu, like a right click, instead of showing or hiding the Accounts and Settings window. The window is in the menu.
 - The tray icon is in colour only while mail is unread: a blue envelope with a red dot on macOS, and with the count in a red badge on Windows and Linux. With nothing unread it is plain. When an account cannot be checked, the Windows and Linux icon shows an orange warning mark.
 
 ### Fixed

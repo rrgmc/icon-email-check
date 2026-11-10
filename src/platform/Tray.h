@@ -37,7 +37,7 @@ public:
     // at sign-in before the taskbar has started.
     static bool isAvailable();
 
-    // The menu must outlive the tray. On macOS the menu is rebuilt from the
+    // A left or a right click opens the menu. The menu must outlive the tray. On macOS the menu is rebuilt from the
     // QMenu's actions each time it opens, so changes to them show.
     Tray(const QString &toolTip, QMenu *menu, QObject *parent = nullptr);
     ~Tray() override;
@@ -55,9 +55,6 @@ public:
     void setDockIconVisible(bool visible);
 
 signals:
-    // A left click, on Windows and Linux; the system opens the menu on a
-    // right click. Not emitted on macOS, where any click opens the menu.
-    void triggered();
     // The last message was clicked. Not emitted on macOS.
     void messageClicked();
     // macOS only: the app was opened again from the Finder or the Dock. A
