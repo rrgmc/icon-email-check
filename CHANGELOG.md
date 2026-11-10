@@ -17,6 +17,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). A r
 
 - "Sign in with Google" failed with "client_secret is missing" when the client secret was typed in the settings and **Add…** clicked right after. The settings now save as they are typed, and the sign-in reads them when it starts. Without a client secret, the Add Account window now says so instead of starting a sign-in that Google refuses.
 - In the Add Account window on macOS, text fields were too narrow for their content, "Signed in as" was cut off, and a Gmail account left an empty gap where the IMAP fields would be.
+- On macOS, clicking the menu bar icon opened the window on the desktop it was last on, and switched to that desktop. It now opens on the current desktop.
 
 ## [0.1.0]
 

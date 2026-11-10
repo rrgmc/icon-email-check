@@ -364,10 +364,13 @@ void MainWindow::showAbout()
 
 void MainWindow::showAndRaise()
 {
-    // A window hidden to the tray comes back on the current desktop. Before
-    // the Dock icon returns, because that activates the app.
-    if (!isVisible())
-        platform::showOnActiveSpace({this});
+    // The window comes to the current desktop, whether it was hidden to the
+    // tray or left open on another one. Before the Dock icon returns, because
+    // that activates the app.
+    QList<QWidget *> windows{this};
+    if (QWidget *modal = QApplication::activeModalWidget())
+        windows << modal;
+    platform::showOnActiveSpace(windows);
     if (m_tray)
         m_tray->setDockIconVisible(true);
     if (platform::loginitem::isSupported())
