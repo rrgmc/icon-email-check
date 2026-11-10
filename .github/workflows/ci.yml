@@ -11,8 +11,10 @@ on:
   push:
     branches: [master]
     paths-ignore: ['**.md']
+  # Every pull request builds, also one that changes only Markdown files,
+  # because master requires the build checks, and a skipped run would never
+  # report them.
   pull_request:
-    paths-ignore: ['**.md']
   workflow_dispatch:
 
 # A new push to a pull request cancels its run that is still going. Runs on

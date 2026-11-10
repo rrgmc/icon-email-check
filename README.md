@@ -85,7 +85,7 @@ The packages are:
 
 ## Continuous integration and releases
 
-`.github/workflows/ci.yml` builds, tests and packages every push to `master` and every pull request on Windows, macOS and Linux. A change that touches only Markdown files builds nothing. Each run keeps its packages as artifacts for a week. They are not signed with a Developer ID, so on macOS the app opens only after **Open Anyway** in **System Settings > Privacy & Security**.
+`.github/workflows/ci.yml` builds, tests and packages every push to `master` and every pull request on Windows, macOS and Linux. A push to `master` that touches only Markdown files builds nothing; a pull request always builds, because `master` requires its three build checks. Each run keeps its packages as artifacts for a week. They are not signed with a Developer ID, so on macOS the app opens only after **Open Anyway** in **System Settings > Privacy & Security**.
 
 Pushing a tag `vX.Y.Z` publishes a release with the three packages, and `vX.Y.Z-rc.N` a prerelease. The tag gives the version, so it need not match `IEC_VERSION` in `CMakeLists.txt`. The release notes are the version's section of [CHANGELOG.md](CHANGELOG.md), or GitHub's list of changes when it has none.
 
