@@ -1,0 +1,12 @@
+# Git worktrees created by Claude Code
+.claude/worktrees/
+
+# Build folders, one per CMake preset
+/build/
+
+# Local presets and editor settings
+/CMakeUserPresets.json
+.vs/
+.vscode/
+*.user
+.DS_Store

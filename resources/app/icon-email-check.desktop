@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Icon Email Check
+Comment=Counts unread email in the tray
+Exec=IconEmailCheck
+Icon=icon-email-check
+Terminal=false
+Categories=Network;Email;
