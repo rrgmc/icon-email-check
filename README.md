@@ -96,7 +96,7 @@ git push origin v0.1.0
 
 To make the release again, run the Release workflow by hand from its tag, under **Use workflow from**.
 
-The build jobs hold no signing secrets, only the Google client. In CI the macOS build job makes the disk image itself, signed ad hoc. For a release, a separate macOS job signs the finished bundle with a Developer ID and notarises the disk image, so no code the build ran can reach the certificate. It reads these secrets from the GitHub environment `release`; without them it signs ad hoc and the run shows a warning:
+The build jobs hold no secrets. On macOS a separate job signs the finished bundle and makes the disk image. For a release, it signs with a Developer ID and notarises the disk image when the GitHub environment `release` has these secrets; without them it signs ad hoc and the run shows a warning:
 
 | Secret | What it holds |
 | --- | --- |
