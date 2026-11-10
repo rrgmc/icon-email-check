@@ -52,15 +52,47 @@ QImage paintTrayBadge(const QImage &image, int count)
     return result;
 }
 
-QIcon withTrayBadge(const QIcon &icon, int count)
+QImage paintAccountDots(const QImage &image, const QList<QColor> &colours)
 {
-    if (count <= 0)
+    if (colours.isEmpty() || image.isNull())
+        return image;
+    QImage result = image.convertToFormat(QImage::Format_ARGB32_Premultiplied);
+    const qreal side = qMin(result.width(), result.height());
+    const int dots = qMin<int>(maxAccountDots, int(colours.size()));
+    // Three dots and their gaps fill the width, so the dots stay visible on a
+    // 16 pixel icon. They sit in the margin above the envelope and overlap its
+    // top edge a little; the badge is in the lower two thirds.
+    const qreal diameter = side * 0.3;
+    const qreal gap = side * 0.04;
+    const qreal rim = qMax(1.0, side / 24);
+    const qreal rowWidth = dots * diameter + (dots - 1) * gap;
+    qreal x = (result.width() - rowWidth) / 2;
+
+    QPainter painter(&result);
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setPen(Qt::NoPen);
+    for (int i = 0; i < dots; ++i) {
+        const QRectF dot(x, 0, diameter, diameter);
+        painter.setCompositionMode(QPainter::CompositionMode_Clear);
+        painter.setBrush(Qt::black);
+        painter.drawEllipse(dot.adjusted(-rim, -rim, rim, rim));
+        painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
+        painter.setBrush(colours.at(i));
+        painter.drawEllipse(dot);
+        x += diameter + gap;
+    }
+    return result;
+}
+
+QIcon withTrayBadge(const QIcon &icon, int count, const QList<QColor> &colours)
+{
+    if (count <= 0 && colours.isEmpty())
         return icon;
     QIcon result;
     for (const int size : traySizes) {
         const QImage image = icon.pixmap(QSize(size, size)).toImage();
         if (!image.isNull())
-            result.addPixmap(QPixmap::fromImage(paintTrayBadge(image, count)));
+            result.addPixmap(QPixmap::fromImage(paintTrayBadge(paintAccountDots(image, colours), count)));
     }
     return result;
 }

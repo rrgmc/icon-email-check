@@ -7,6 +7,7 @@
 #include "mail/ImapChecker.h"
 
 #include <QCheckBox>
+#include <QColorDialog>
 #include <QComboBox>
 #include <QDialogButtonBox>
 #include <QFormLayout>
@@ -14,6 +15,8 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
+#include <QPainter>
+#include <QPixmap>
 #include <QPushButton>
 #include <QSpinBox>
 #include <QUuid>
@@ -51,6 +54,24 @@ const Preset presets[] = {
 
 } // namespace
 
+QIcon accountColourIcon(const QColor &colour)
+{
+    QIcon icon;
+    for (const int size : {16, 32}) {
+        QPixmap pixmap(size, size);
+        pixmap.fill(Qt::transparent);
+        QPainter painter(&pixmap);
+        painter.setRenderHint(QPainter::Antialiasing);
+        painter.setPen(QPen(colour.darker(130), size / 16.0));
+        painter.setBrush(colour);
+        const qreal inset = size / 8.0;
+        painter.drawEllipse(QRectF(pixmap.rect()).adjusted(inset, inset, -inset, -inset));
+        painter.end();
+        icon.addPixmap(pixmap);
+    }
+    return icon;
+}
+
 AccountDialog::AccountDialog(const Account &account, bool hasSecret,
                              std::function<gmail::OAuthClient()> googleClient, SecretStore *secrets, QWidget *parent)
     : QDialog(parent)
@@ -59,6 +80,7 @@ AccountDialog::AccountDialog(const Account &account, bool hasSecret,
     , m_googleClient(std::move(googleClient))
     , m_secrets(secrets)
     , m_gmailEmail(account.type == AccountType::Gmail ? account.email : QString())
+    , m_colour(account.colour.isValid() ? account.colour : QColor(0xef, 0x44, 0x44))
 {
     setWindowTitle(account.id.isEmpty() ? tr("Add Account") : tr("Edit Account"));
     if (m_account.id.isEmpty())
@@ -92,6 +114,11 @@ AccountDialog::AccountDialog(const Account &account, bool hasSecret,
     m_name = new QLineEdit(account.name);
     m_name->setPlaceholderText(tr("Shown in the menu, such as \"Personal\""));
     m_form->addRow(tr("Name:"), m_name);
+    m_colourButton = new QPushButton(tr("Choose…"));
+    m_colourButton->setIcon(accountColourIcon(m_colour));
+    m_colourButton->setToolTip(tr("A dot of this colour shows on the tray icon while the account has unread email."));
+    connect(m_colourButton, &QPushButton::clicked, this, &AccountDialog::chooseColour);
+    m_form->addRow(tr("Colour:"), atLeft(m_colourButton));
 
     // Gmail rows.
     m_gmailStatus = new QLabel;
@@ -264,6 +291,15 @@ void AccountDialog::updateGmailStatus()
     m_signIn->setEnabled(usable);
 }
 
+void AccountDialog::chooseColour()
+{
+    const QColor colour = QColorDialog::getColor(m_colour, this, tr("Account Colour"));
+    if (!colour.isValid())
+        return;
+    m_colour = colour;
+    m_colourButton->setIcon(accountColourIcon(m_colour));
+}
+
 void AccountDialog::signIn()
 {
     if (m_signInFlow) {
@@ -298,6 +334,7 @@ Account AccountDialog::account() const
     Account a = m_account;
     a.type = AccountType(m_type->currentData().toInt());
     a.name = m_name->text().trimmed();
+    a.colour = m_colour;
     a.intervalMinutes = m_interval->value();
     a.notify = m_notify->isChecked();
     a.enabled = m_enabled->isChecked();

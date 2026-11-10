@@ -4,7 +4,8 @@ Icon Email Check is a tray app for macOS, Windows and Linux. It counts the unrea
 
 - **Gmail** through the Gmail API, after "Sign in with Google".
 - **Any IMAP server**, such as iCloud, Yahoo, Fastmail, or Gmail with an app password.
-- **The icon changes with the count.** On macOS the menu bar shows a plain envelope in the menu bar's colour while nothing is unread, and a blue envelope with a red dot, with the count beside it, while mail is unread. On Windows and Linux the icon is a grey outline while nothing is unread, and a blue envelope with the count in a red badge while mail is unread. When an account cannot be checked, the icon shows a warning mark.
+- **The icon changes with the count.** On macOS the menu bar shows a plain envelope in the menu bar's colour while nothing is unread, and a blue envelope, with the count beside it, while mail is unread. On Windows and Linux the icon is a grey outline while nothing is unread, and a blue envelope with the count in a red badge while mail is unread. When an account cannot be checked, the icon shows a warning mark.
+- **Each account has a colour.** While mail is unread, a dot in the colour of each account that has unread mail shows along the top of the icon, up to three, in the order of the account list. A new account gets an unused colour; choose another in the account's settings.
 - **Desktop notifications for new email**, with the sender and subject. Clicking one opens the account's inbox.
 - **The tray menu** lists each account with its count and its newest unread messages. Clicking an account opens its inbox in the browser.
 - **Starts at sign-in** if you choose, and **starts in the tray** without a window.

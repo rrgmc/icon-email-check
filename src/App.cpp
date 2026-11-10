@@ -148,9 +148,15 @@ void App::updateTray()
         return;
     const int total = m_monitor->totalUnread();
     const bool problem = m_monitor->hasProblem();
+    // A dot for each account with unread mail, in the order of the list.
+    QList<QColor> dots;
+    for (const Account &account : m_monitor->accounts()) {
+        if (account.enabled && account.colour.isValid() && m_monitor->state(account.id).unread > 0)
+            dots << account.colour;
+    }
     m_tray->setState(problem ? platform::Tray::State::Problem
                              : (total > 0 ? platform::Tray::State::Unread : platform::Tray::State::NoMail),
-                     total);
+                     total, dots);
 
     QStringList lines{QApplication::applicationDisplayName()};
     for (const Account &account : m_monitor->accounts()) {

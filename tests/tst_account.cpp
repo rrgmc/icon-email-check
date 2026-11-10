@@ -18,6 +18,7 @@ private Q_SLOTS:
         a.enabled = false;
         a.notify = false;
         a.intervalMinutes = 15;
+        a.colour = QColor(0x12, 0x34, 0x56);
         a.host = QStringLiteral("imap.example.com");
         a.port = 143;
         a.security = ImapSecurity::StartTls;
@@ -31,6 +32,7 @@ private Q_SLOTS:
         QCOMPARE(b.enabled, a.enabled);
         QCOMPARE(b.notify, a.notify);
         QCOMPARE(b.intervalMinutes, a.intervalMinutes);
+        QCOMPARE(b.colour, a.colour);
         QCOMPARE(b.host, a.host);
         QCOMPARE(b.port, a.port);
         QCOMPARE(b.security, a.security);
