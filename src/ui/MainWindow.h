@@ -7,6 +7,7 @@ class QLabel;
 class QLineEdit;
 class QPushButton;
 class QTreeWidget;
+class QVBoxLayout;
 
 namespace iec {
 
@@ -51,6 +52,8 @@ protected:
 
 private:
     void buildUi();
+    // The "Google sign-in" section, when the build has IEC_GOOGLE_CLIENT_SETTINGS.
+    void buildGoogleSettings(QVBoxLayout *layout);
     void refresh();
     void removeAccount(const QString &id);
     void moveAccount(int delta);

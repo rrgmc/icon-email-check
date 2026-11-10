@@ -4,7 +4,7 @@ Icon Email Check is a tray app for macOS, Windows and Linux. It counts the unrea
 
 - **Gmail** through the Gmail API, after "Sign in with Google".
 - **Any IMAP server**, such as iCloud, Yahoo, Fastmail, or Gmail with an app password.
-- **The icon changes with the count.** On macOS the menu bar shows an envelope, a filled envelope with the count beside it when mail is unread, and a faded envelope when an account cannot be checked. On Windows and Linux the count is a red badge on the icon, and the icon turns grey when an account cannot be checked.
+- **The icon changes with the count.** On macOS the menu bar shows a plain envelope in the menu bar's colour while nothing is unread, and a blue envelope with a red dot, with the count beside it, while mail is unread. On Windows and Linux the icon is a grey outline while nothing is unread, and a blue envelope with the count in a red badge while mail is unread. When an account cannot be checked, the icon shows a warning mark.
 - **Desktop notifications for new email**, with the sender and subject. Clicking one opens the account's inbox.
 - **The tray menu** lists each account with its count and its newest unread messages. Clicking an account opens its inbox in the browser.
 - **Starts at sign-in** if you choose, and **starts in the tray** without a window.
@@ -27,20 +27,29 @@ Gmail accounts can be added in two ways.
 
 ### Sign in with Google
 
-Google needs an OAuth client to sign in. Make one in your own Google Cloud project once:
+Google needs an OAuth client to sign in. The packages that CI builds carry one, so their users only choose **Sign in with Google…**. A build without one asks for a client in its settings window.
 
-1. In the [Google Cloud console](https://console.cloud.google.com/), create a project.
+The client lives in a Google Cloud project of its own:
+
+1. In the [Google Cloud console](https://console.cloud.google.com/), create a project for Icon Email Check. Every client in a project shares its consent screen, so a project used by another app would show that app's name.
 2. Enable the **Gmail API** under **APIs & Services > Library**.
-3. Under **Google Auth Platform > Audience** (the OAuth consent screen), choose **External**.
-4. While the app is in **Testing**, add your Gmail addresses under **Test users**. Google ends a test app's sign-ins after 7 days. To avoid this, choose **Publish app**. A personal app does not need Google's review; the sign-in page then shows a warning that Google has not verified the app.
+3. Under **Google Auth Platform > Branding**, set the app name, and these links. GitHub Pages publishes them from the `docs/` folder once **Settings > Pages** builds from the branch `master` and the folder `/docs`:
+   - **Application home page:** `https://rrgmc.github.io/icon-email-check/`
+   - **Privacy policy:** `https://rrgmc.github.io/icon-email-check/privacy.html` ([docs/privacy.md](docs/privacy.md))
+   - **Authorized domains:** `rrgmc.github.io`
+4. Under **Audience**, choose **External**, then **Publish app**. While the app is in **Testing**, only the addresses under **Test users** can sign in, and Google ends their sign-ins after 7 days. A published app that Google has not verified shows a warning page at sign-in; choose **Advanced**, then **Go to Icon Email Check (unsafe)**. Removing the warning for everyone needs Google's verification, which for the `gmail.readonly` scope includes a yearly security assessment.
 5. Under **Clients**, create a client of type **Desktop app**. Copy its client ID and client secret.
-6. In Icon Email Check, paste both into **Google sign-in** in the settings window.
 
-Then add an account of type **Gmail**, and choose **Sign in with Google…**. The browser opens Google's sign-in page and returns to the app when you are done.
+To build the client into the app:
+
+- **CI and releases:** set the repository secrets `IEC_GOOGLE_CLIENT_ID` and `IEC_GOOGLE_CLIENT_SECRET`, under **Settings > Secrets and variables > Actions**, or with `gh secret set IEC_GOOGLE_CLIENT_ID` and `gh secret set IEC_GOOGLE_CLIENT_SECRET`. The build passes them to CMake through the environment. A pull request from a fork gets no secrets, and builds without a client.
+- **Local builds:** set the environment variables of the same names before the first `cmake --preset`, or pass `-DIEC_GOOGLE_CLIENT_ID=… -DIEC_GOOGLE_CLIENT_SECRET=…`.
+
+The CMake option `IEC_GOOGLE_CLIENT_SETTINGS` decides whether the settings window has the **Google sign-in** section, where a user sets a client of their own. It is off when a client is built in, and on otherwise. With the section, a client set there replaces the built-in one; without it, the built-in client is the only one.
+
+A desktop app's client secret is not a secret: Google expects it to ship inside the app, and anyone can read it from the executable. The repository keeps it in secrets so that it is not in the source, where anyone could reuse it without effort and GitHub's secret scanning would flag it.
 
 The app asks for the `gmail.readonly` scope. Without a search, the count is the number of unread messages in the inbox. Gmail's web page may count conversations instead, so the two can differ. A search such as `is:unread category:primary` counts only what it finds.
-
-A desktop app's client secret is not a secret: Google expects it to ship inside the app. A build can carry a default client with `-DIEC_GOOGLE_CLIENT_ID=… -DIEC_GOOGLE_CLIENT_SECRET=…`, or the environment variables of the same names, at configure time. A client set in the settings window replaces it.
 
 ### IMAP with an app password
 

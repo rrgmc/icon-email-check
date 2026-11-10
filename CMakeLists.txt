@@ -54,10 +54,29 @@ endif()
 
 option(IEC_WERROR "Treat compiler warnings as errors" OFF)
 
-# The Google OAuth client that "Sign in with Google" uses. Each user can also
-# set their own in the app's settings. See README.md#gmail.
-set(IEC_GOOGLE_CLIENT_ID "$ENV{IEC_GOOGLE_CLIENT_ID}" CACHE STRING "Default Google OAuth client ID")
-set(IEC_GOOGLE_CLIENT_SECRET "$ENV{IEC_GOOGLE_CLIENT_SECRET}" CACHE STRING "Default Google OAuth client secret")
+# The Google OAuth client that "Sign in with Google" uses, built into the app.
+# CI takes them from the repository's secrets of the same names, through the
+# environment. Only src/Settings.cpp is compiled with them. A desktop app's
+# client ships inside the app, so this keeps them out of the repository, not
+# out of the app. See README.md#gmail.
+set(IEC_GOOGLE_CLIENT_ID "$ENV{IEC_GOOGLE_CLIENT_ID}" CACHE STRING "The built-in Google OAuth client ID")
+set(IEC_GOOGLE_CLIENT_SECRET "$ENV{IEC_GOOGLE_CLIENT_SECRET}" CACHE STRING "The built-in Google OAuth client secret")
+if(IEC_GOOGLE_CLIENT_ID AND NOT IEC_GOOGLE_CLIENT_SECRET)
+    message(WARNING "IEC_GOOGLE_CLIENT_ID is set without IEC_GOOGLE_CLIENT_SECRET; Google refuses a desktop app's sign-in without the secret.")
+endif()
+# Whether the settings window has the "Google sign-in" section, where a user
+# sets an OAuth client of their own. Off by default when a client is built in.
+if(IEC_GOOGLE_CLIENT_ID)
+    set(_google_settings_default OFF)
+else()
+    set(_google_settings_default ON)
+endif()
+option(IEC_GOOGLE_CLIENT_SETTINGS "Show the Google sign-in section in the settings window" ${_google_settings_default})
+if(IEC_GOOGLE_CLIENT_ID)
+    message(STATUS "Google sign-in: built-in client; settings section ${IEC_GOOGLE_CLIENT_SETTINGS}")
+else()
+    message(STATUS "Google sign-in: no built-in client; settings section ${IEC_GOOGLE_CLIENT_SETTINGS}")
+endif()
 
 # macOS keeps a list of the apps that may read each keychain entry. An ad hoc
 # signature changes with every build, so macOS would ask again after each one.

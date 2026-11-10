@@ -24,7 +24,8 @@ jobs:
     with:
       release-tag: ${{ github.ref_name }}
       macos-signing: developer-id
-    # Only the signing job reads them.
+    # The build jobs read the Google client; only the signing job reads the
+    # signing secrets.
     secrets: inherit
 
   publish:

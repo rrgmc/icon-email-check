@@ -27,3 +27,7 @@ permissions:
 jobs:
   build:
     uses: ./.github/workflows/build.yml
+    # Only the Google client, which the app builds in.
+    secrets:
+      IEC_GOOGLE_CLIENT_ID: ${{ secrets.IEC_GOOGLE_CLIENT_ID }}
+      IEC_GOOGLE_CLIENT_SECRET: ${{ secrets.IEC_GOOGLE_CLIENT_SECRET }}

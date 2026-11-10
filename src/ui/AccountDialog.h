@@ -6,13 +6,15 @@
 #include <QDialog>
 #include <QPointer>
 
+#include <functional>
+
 class QCheckBox;
 class QComboBox;
 class QLabel;
 class QLineEdit;
 class QPushButton;
 class QSpinBox;
-class QStackedWidget;
+class QFormLayout;
 
 namespace iec {
 
@@ -28,7 +30,9 @@ class AccountDialog : public QDialog
 
 public:
     // hasSecret: an edited account already has a secret in the keychain.
-    AccountDialog(const Account &account, bool hasSecret, const gmail::OAuthClient &googleClient,
+    // googleClient gives the Google OAuth client of the settings. It is asked
+    // each time it is needed, so a change in the settings window applies at once.
+    AccountDialog(const Account &account, bool hasSecret, std::function<gmail::OAuthClient()> googleClient,
                   SecretStore *secrets, QWidget *parent = nullptr);
     ~AccountDialog() override;
 
@@ -40,6 +44,8 @@ public:
 
 private:
     void typeChanged();
+    // Shows the rows of the chosen type, and the provider's help when it has one.
+    void updateRows();
     void presetChanged();
     void signIn();
     void test();
@@ -48,22 +54,25 @@ private:
 
     Account m_account;
     bool m_hasSecret;
-    gmail::OAuthClient m_googleClient;
+    std::function<gmail::OAuthClient()> m_googleClient;
     SecretStore *m_secrets;
     QString m_newSecret;
     QString m_gmailEmail;
 
     QComboBox *m_type = nullptr;
     QLineEdit *m_name = nullptr;
-    QStackedWidget *m_pages = nullptr;
+    QFormLayout *m_form = nullptr;
     // Gmail
     QLabel *m_gmailStatus = nullptr;
     QPushButton *m_signIn = nullptr;
+    QWidget *m_signInRow = nullptr;
     QLineEdit *m_gmailQuery = nullptr;
     // IMAP
     QComboBox *m_preset = nullptr;
+    QWidget *m_presetRow = nullptr;
     QLineEdit *m_host = nullptr;
     QSpinBox *m_port = nullptr;
+    QWidget *m_portRow = nullptr;
     QComboBox *m_security = nullptr;
     QLineEdit *m_username = nullptr;
     QLineEdit *m_password = nullptr;

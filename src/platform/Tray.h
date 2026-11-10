@@ -12,12 +12,16 @@ namespace iec::platform {
 // The icon in the Windows notification area, the macOS menu bar or the Linux
 // system tray. Its picture follows the unread count.
 //
+// The icon is in colour while mail is unread, and plain otherwise.
+//
 // On macOS it is a native NSStatusItem, in TrayMac.mm. Qt 6.8's
 // QSystemTrayIcon aborts on macOS 27 when the icon is clicked: it reads the
-// click count of an event that is no longer a mouse event. The status item
-// shows a template image, which macOS draws in the menu bar's colour, and the
-// count as its title. Elsewhere it wraps QSystemTrayIcon, in Tray.cpp, and
-// draws the count as a red badge on the icon.
+// click count of an event that is no longer a mouse event. With nothing
+// unread, the status item shows a template image, which macOS draws in the
+// menu bar's colour; with unread mail, a blue envelope with a red dot and the
+// count as its title. Elsewhere it wraps QSystemTrayIcon, in Tray.cpp: a grey
+// outline with nothing unread, and a blue envelope with the count in a red
+// badge with unread mail.
 class Tray : public QObject
 {
     Q_OBJECT
