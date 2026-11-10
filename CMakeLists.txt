@@ -11,7 +11,7 @@ if(POLICY CMP0177)
 endif()
 
 # The release workflow passes the tag's version, for example -DIEC_VERSION=1.2.0.
-set(IEC_VERSION "0.1.0" CACHE STRING "The app's version, as X.Y.Z")
+set(IEC_VERSION "1.0.0" CACHE STRING "The app's version, as X.Y.Z")
 if(NOT IEC_VERSION MATCHES "^[0-9]+\.[0-9]+\.[0-9]+$")
     message(FATAL_ERROR "IEC_VERSION is \"${IEC_VERSION}\", not X.Y.Z")
 endif()

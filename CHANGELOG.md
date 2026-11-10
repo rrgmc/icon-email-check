@@ -4,6 +4,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). A r
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-10
+
 ### Added
 
 - Packages built by CI carry a Google OAuth client, from the repository's secrets, so "Sign in with Google" works without setting one up. The CMake option `IEC_GOOGLE_CLIENT_SETTINGS` shows or hides the settings window's Google sign-in section; it is hidden when a client is built in.
