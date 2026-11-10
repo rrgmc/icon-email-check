@@ -38,6 +38,8 @@ public:
 
     void addAccount();
     void editAccount(const QString &id);
+    // Shows the About window: the version, the author and the links.
+    void showAbout();
 
     // Saves the window's place. Called before the app quits.
     void saveState();
@@ -61,7 +63,6 @@ private:
     void updateStartAtSignIn();
     void setStartAtSignIn(bool on);
     void saveGoogleClient();
-    void showAbout();
 
     Settings *m_settings;
     SecretStore *m_secrets;

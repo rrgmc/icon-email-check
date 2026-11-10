@@ -128,3 +128,7 @@ The tray, the Dock and starting at sign-in follow the approach of the Mirante pr
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+## Author
+
+Rangel Reale <realerangel@gmail.com>
