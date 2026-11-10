@@ -85,7 +85,7 @@ The packages are:
 
 ## Continuous integration and releases
 
-`.github/workflows/ci.yml` builds, tests and packages every push to `master` and every pull request on Windows, macOS and Linux. A change that touches only Markdown files builds nothing. Each run keeps its packages as artifacts for a week. They are not signed with a Developer ID, so on macOS the app opens only after **Open Anyway** in **System Settings > Privacy & Security**.
+`.github/workflows/ci.yml` builds, tests and packages every push to `master` and every pull request on Windows, macOS and Linux. A push to `master` that touches only Markdown files builds nothing; a pull request always builds, because `master` requires its three build checks. Each run keeps its packages as artifacts for a week. They are not signed with a Developer ID, so on macOS the app opens only after **Open Anyway** in **System Settings > Privacy & Security**.
 
 Pushing a tag `vX.Y.Z` publishes a release with the three packages, and `vX.Y.Z-rc.N` a prerelease. The tag gives the version, so it need not match `IEC_VERSION` in `CMakeLists.txt`. The release notes are the version's section of [CHANGELOG.md](CHANGELOG.md), or GitHub's list of changes when it has none.
 
@@ -96,7 +96,7 @@ git push origin v0.1.0
 
 To make the release again, run the Release workflow by hand from its tag, under **Use workflow from**.
 
-The build jobs hold no secrets. On macOS a separate job signs the finished bundle and makes the disk image. For a release, it signs with a Developer ID and notarises the disk image when the GitHub environment `release` has these secrets; without them it signs ad hoc and the run shows a warning:
+The build jobs hold no signing secrets, only the Google client. In CI the macOS build job makes the disk image itself, signed ad hoc. For a release, a separate macOS job signs the finished bundle with a Developer ID and notarises the disk image, so no code the build ran can reach the certificate. It reads these secrets from the GitHub environment `release`; without them it signs ad hoc and the run shows a warning:
 
 | Secret | What it holds |
 | --- | --- |
