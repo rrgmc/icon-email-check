@@ -212,6 +212,7 @@ void MainWindow::refresh()
         auto *item = new QTreeWidgetItem(m_list);
         item->setData(NameColumn, Qt::UserRole, account.id);
         item->setText(NameColumn, QStringLiteral("%1 (%2)").arg(account.displayName(), typeName(account.type)));
+        item->setIcon(NameColumn, accountColourIcon(account.colour));
         item->setText(UnreadColumn, account.enabled && state.lastGood.isValid() ? QString::number(state.unread)
                                                                                : QStringLiteral("–"));
         item->setTextAlignment(UnreadColumn, Qt::AlignCenter);
@@ -255,6 +256,7 @@ void MainWindow::addAccount()
 {
     showAndRaise();
     Account account;
+    account.colour = nextAccountColour(m_monitor->accounts());
     AccountDialog dialog(account, false, [this] { return m_settings->googleClient(); }, m_secrets, this);
     if (dialog.exec() != QDialog::Accepted)
         return;

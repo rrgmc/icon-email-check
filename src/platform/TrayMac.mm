@@ -96,14 +96,15 @@
 
 namespace {
 
-// The icon as a menu bar image. A template image is drawn by macOS from its
-// alpha only, in the menu bar's colour; any other image keeps its colours.
-NSImage *toStatusImage(const QIcon &icon, bool isTemplate)
+// The icon as a menu bar image, with the account dots. A template image is
+// drawn by macOS from its alpha only, in the menu bar's colour; any other
+// image keeps its colours.
+NSImage *toStatusImage(const QIcon &icon, bool isTemplate, const QList<QColor> &dots = {})
 {
     const NSSize size = NSMakeSize(18, 18);
     NSImage *image = [[NSImage alloc] initWithSize:size];
     for (const qreal scale : {1.0, 2.0}) {
-        const QImage qimage = icon.pixmap(QSize(18, 18), scale).toImage();
+        const QImage qimage = iec::platform::paintAccountDots(icon.pixmap(QSize(18, 18), scale).toImage(), dots);
         CGImageRef cgImage = qimage.toCGImage();
         if (!cgImage)
             continue;
@@ -127,10 +128,11 @@ struct Tray::Private
     IecTrayMenuDelegate *delegate = nil;
     IecReopenHandler *reopenHandler = nil;
     NSImage *noMail = nil;
-    NSImage *unread = nil;
+    QIcon unread;
     NSImage *problem = nil;
     State state = State::NoMail;
     int count = 0;
+    QList<QColor> dots;
     // The last state asked for, which a delayed change checks it still applies.
     bool dockIconVisible = true;
 };
@@ -169,7 +171,8 @@ Tray::Tray(const QString &toolTip, QMenu *menu, QObject *parent)
     // In the menu bar's colour while nothing is unread, and in colour while
     // something is, so unread mail stands out.
     d->noMail = toStatusImage(QIcon(QStringLiteral(":/icons/tray-mono.svg")), true);
-    d->unread = toStatusImage(QIcon(QStringLiteral(":/icons/tray-unread.svg")), false);
+    // Drawn for each change, with the dots of the accounts that have unread mail.
+    d->unread = QIcon(QStringLiteral(":/icons/tray-unread.svg"));
     d->problem = toStatusImage(QIcon(QStringLiteral(":/icons/tray-mono-error.svg")), true);
     d->delegate = [[IecTrayMenuDelegate alloc] initWithMenu:menu];
     d->menu = [[NSMenu alloc] init];
@@ -207,13 +210,21 @@ Tray::~Tray()
     [NSStatusBar.systemStatusBar removeStatusItem:d->item];
 }
 
-void Tray::setState(State state, int count)
+void Tray::setState(State state, int count, const QList<QColor> &dots)
 {
-    if (state == d->state && count == d->count)
+    const QList<QColor> shown = dots.mid(0, maxAccountDots);
+    if (state == d->state && count == d->count && shown == d->dots)
         return;
     d->state = state;
     d->count = count;
-    d->item.button.image = state == State::Problem ? d->problem : (count > 0 ? d->unread : d->noMail);
+    d->dots = shown;
+    // The problem image is a template, drawn in one colour, so it has no dots.
+    if (state == State::Problem)
+        d->item.button.image = d->problem;
+    else if (count > 0)
+        d->item.button.image = toStatusImage(d->unread, false, shown);
+    else
+        d->item.button.image = d->noMail;
     // A square item has room for the icon only, so the item grows with a count.
     d->item.length = count > 0 ? NSVariableStatusItemLength : NSSquareStatusItemLength;
     d->item.button.imagePosition = count > 0 ? NSImageLeft : NSImageOnly;

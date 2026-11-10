@@ -4,6 +4,7 @@
 #include "mail/GmailApi.h"
 
 #include <QDialog>
+#include <QIcon>
 #include <QPointer>
 
 #include <functional>
@@ -19,6 +20,10 @@ class QFormLayout;
 namespace iec {
 
 class GoogleSignIn;
+
+// A round swatch of the colour, for the account's colour in lists and buttons.
+QIcon accountColourIcon(const QColor &colour);
+
 class MailChecker;
 class SecretStore;
 
@@ -50,6 +55,7 @@ private:
     void signIn();
     void test();
     void updateGmailStatus();
+    void chooseColour();
     QString validate() const;
 
     Account m_account;
@@ -61,6 +67,8 @@ private:
 
     QComboBox *m_type = nullptr;
     QLineEdit *m_name = nullptr;
+    QColor m_colour;
+    QPushButton *m_colourButton = nullptr;
     QFormLayout *m_form = nullptr;
     // Gmail
     QLabel *m_gmailStatus = nullptr;

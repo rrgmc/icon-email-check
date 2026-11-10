@@ -11,9 +11,13 @@ QList<Account> Settings::accounts() const
     const QJsonArray array = QJsonDocument::fromJson(QSettings().value(QStringLiteral("accounts")).toByteArray()).array();
     QList<Account> result;
     for (const QJsonValue &value : array) {
-        const Account account = Account::fromJson(value.toObject());
-        if (!account.id.isEmpty())
-            result << account;
+        Account account = Account::fromJson(value.toObject());
+        if (account.id.isEmpty())
+            continue;
+        // Accounts saved before colours existed get one here.
+        if (!account.colour.isValid())
+            account.colour = nextAccountColour(result);
+        result << account;
     }
     return result;
 }

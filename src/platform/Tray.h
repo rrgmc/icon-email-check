@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QColor>
+#include <QList>
 #include <QObject>
 #include <QString>
 
@@ -12,14 +14,16 @@ namespace iec::platform {
 // The icon in the Windows notification area, the macOS menu bar or the Linux
 // system tray. Its picture follows the unread count.
 //
-// The icon is in colour while mail is unread, and plain otherwise.
+// The icon is in colour while mail is unread, and plain otherwise. While mail
+// is unread, a row of dots along its top shows which accounts have it, in each
+// account's colour, up to three.
 //
 // On macOS it is a native NSStatusItem, in TrayMac.mm. Qt 6.8's
 // QSystemTrayIcon aborts on macOS 27 when the icon is clicked: it reads the
 // click count of an event that is no longer a mouse event. With nothing
 // unread, the status item shows a template image, which macOS draws in the
-// menu bar's colour; with unread mail, a blue envelope with a red dot and the
-// count as its title. Elsewhere it wraps QSystemTrayIcon, in Tray.cpp: a grey
+// menu bar's colour; with unread mail, a blue envelope with the account dots
+// and the count as its title. Elsewhere it wraps QSystemTrayIcon, in Tray.cpp: a grey
 // outline with nothing unread, and a blue envelope with the count in a red
 // badge with unread mail.
 class Tray : public QObject
@@ -42,7 +46,9 @@ public:
     Tray(const QString &toolTip, QMenu *menu, QObject *parent = nullptr);
     ~Tray() override;
 
-    void setState(State state, int count);
+    // dots: the colours of the accounts with unread mail, in order. The icon
+    // shows the first maxAccountDots of them.
+    void setState(State state, int count, const QList<QColor> &dots = {});
     void setToolTip(const QString &toolTip);
 
     // Shows a message from the icon, a notification on Windows and Linux.

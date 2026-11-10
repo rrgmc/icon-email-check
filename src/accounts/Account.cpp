@@ -3,6 +3,9 @@
 #include <QCoreApplication>
 #include <QUrl>
 
+#include <algorithm>
+#include <iterator>
+
 namespace iec {
 
 namespace {
@@ -21,6 +24,18 @@ QString securityKey(ImapSecurity security)
     }
     return QStringLiteral("tls");
 }
+
+// Bright colours that stay apart from each other and from the blue envelope.
+const QColor accountPalette[] = {
+    QColor(0xef, 0x44, 0x44),    // red
+    QColor(0x22, 0xc5, 0x5e),    // green
+    QColor(0xf5, 0x9e, 0x0b),    // amber
+    QColor(0xa8, 0x55, 0xf7),    // purple
+    QColor(0x06, 0xb6, 0xd4),    // cyan
+    QColor(0xec, 0x48, 0x99),    // pink
+    QColor(0x84, 0xcc, 0x16),    // lime
+    QColor(0xf9, 0x73, 0x16),    // orange
+};
 
 ImapSecurity securityFromKey(const QString &key)
 {
@@ -67,6 +82,8 @@ QJsonObject Account::toJson() const
     json[QLatin1String("enabled")] = enabled;
     json[QLatin1String("notify")] = notify;
     json[QLatin1String("intervalMinutes")] = intervalMinutes;
+    if (colour.isValid())
+        json[QLatin1String("colour")] = colour.name(QColor::HexRgb);
     json[QLatin1String("email")] = email;
     json[QLatin1String("gmailQuery")] = gmailQuery;
     json[QLatin1String("host")] = host;
@@ -88,6 +105,7 @@ Account Account::fromJson(const QJsonObject &json)
     a.enabled = json.value(QLatin1String("enabled")).toBool(true);
     a.notify = json.value(QLatin1String("notify")).toBool(true);
     a.intervalMinutes = qBound(1, json.value(QLatin1String("intervalMinutes")).toInt(5), 24 * 60);
+    a.colour = QColor::fromString(json.value(QLatin1String("colour")).toString());
     a.email = json.value(QLatin1String("email")).toString();
     a.gmailQuery = json.value(QLatin1String("gmailQuery")).toString();
     a.host = json.value(QLatin1String("host")).toString();
@@ -105,6 +123,17 @@ QString typeName(AccountType type)
 {
     return type == AccountType::Imap ? QCoreApplication::translate("Account", "IMAP")
                                      : QCoreApplication::translate("Account", "Gmail");
+}
+
+QColor nextAccountColour(const QList<Account> &accounts)
+{
+    for (const QColor &colour : accountPalette) {
+        const bool used = std::any_of(accounts.begin(), accounts.end(),
+                                      [&](const Account &a) { return a.colour.rgb() == colour.rgb(); });
+        if (!used)
+            return colour;
+    }
+    return accountPalette[accounts.size() % std::size(accountPalette)];
 }
 
 } // namespace iec

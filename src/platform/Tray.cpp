@@ -21,6 +21,7 @@ struct Tray::Private
     QIcon problem;
     State state = State::NoMail;
     int count = 0;
+    QList<QColor> dots;
 };
 
 bool Tray::isAvailable() { return QSystemTrayIcon::isSystemTrayAvailable(); }
@@ -50,14 +51,16 @@ Tray::Tray(const QString &toolTip, QMenu *menu, QObject *parent)
 
 Tray::~Tray() = default;
 
-void Tray::setState(State state, int count)
+void Tray::setState(State state, int count, const QList<QColor> &dots)
 {
-    if (state == d->state && count == d->count)
+    const QList<QColor> shown = dots.mid(0, maxAccountDots);
+    if (state == d->state && count == d->count && shown == d->dots)
         return;
     d->state = state;
     d->count = count;
+    d->dots = shown;
     const QIcon &base = state == State::Problem ? d->problem : (count > 0 ? d->unread : d->noMail);
-    d->icon->setIcon(withTrayBadge(base, count));
+    d->icon->setIcon(withTrayBadge(base, count, shown));
 }
 
 void Tray::setToolTip(const QString &toolTip) { d->icon->setToolTip(toolTip); }

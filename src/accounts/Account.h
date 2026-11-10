@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QColor>
 #include <QJsonObject>
 #include <QList>
 #include <QString>
@@ -30,6 +31,9 @@ struct Account
     bool enabled = true;
     bool notify = true;
     int intervalMinutes = 5;
+    // Marks the account's unread mail on the tray icon. Invalid until one is
+    // chosen; Settings gives every saved account one.
+    QColor colour;
 
     // Gmail: the address of the signed-in account. IMAP: shown in the menu.
     QString email;
@@ -58,5 +62,9 @@ struct Account
 };
 
 QString typeName(AccountType type);
+
+// A colour for a new account: the first of a fixed palette that no account in
+// accounts uses yet, or one picked by their number when all are used.
+QColor nextAccountColour(const QList<Account> &accounts);
 
 } // namespace iec
