@@ -17,17 +17,18 @@ Every change happens in a Git worktree with its own branch, so several sessions 
 - The main checkout stays on a clean `master`, so other sessions can branch from it. Never edit its files, and never run `git checkout` or `git switch` in it. A new branch in the main checkout is not enough.
 - The hook in `.claude/hooks/require-worktree.py` enforces this: it refuses Edit and Write calls on files of the main checkout. Shell commands are not checked, so do not write files there with them either.
 - Commit in the worktree as the work progresses, one focused commit per finished piece.
-- Merge into `master` only when the user asks. Then, from the main checkout, fast-forward it and push:
+- `master` is protected by a GitHub ruleset: changes reach it only through a pull request whose three build checks pass. Nobody can push to it, force-push it or delete it. Tags are not protected, so a release still starts from `git push origin vX.Y.Z`.
+- When a piece is finished and its build and tests pass, push the branch and open a pull request with `gh pr create`. Pushing a branch and opening its pull request need the user's go-ahead.
+- Only the user merges, on GitHub or by asking for it. Turn on auto-merge only when the user asks. When the user asks for the merge, use a merge commit: `gh pr merge <number> --merge`. Do not pass `--delete-branch`: from a worktree it fails, because it tries to check out `master`, which the main checkout has.
+- If `master` moved since the branch started and the pull request conflicts, merge `master` into the branch in the worktree, resolve the conflicts there and push again.
+- After the merge, update the main checkout and clean up, from the main checkout:
 
   ```sh
-  git fetch origin
+  git fetch origin --prune
   git merge --ff-only origin/master
-  git merge --ff-only <branch>
-  git push origin master
+  git worktree remove .claude/worktrees/<branch>
+  git branch -d <branch>
   ```
-
-  If `master` moved since the branch started, merge `master` into the branch in the worktree first, so the fast-forward works.
-- After the merge, remove the worktree and delete the branch: `git worktree remove .claude/worktrees/<branch>` and `git branch -d <branch>`.
 
 ## Building
 
