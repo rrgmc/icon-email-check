@@ -52,12 +52,12 @@ const Preset presets[] = {
 
 } // namespace
 
-AccountDialog::AccountDialog(const Account &account, bool hasSecret, const gmail::OAuthClient &googleClient,
-                             SecretStore *secrets, QWidget *parent)
+AccountDialog::AccountDialog(const Account &account, bool hasSecret,
+                             std::function<gmail::OAuthClient()> googleClient, SecretStore *secrets, QWidget *parent)
     : QDialog(parent)
     , m_account(account)
     , m_hasSecret(hasSecret)
-    , m_googleClient(googleClient)
+    , m_googleClient(std::move(googleClient))
     , m_secrets(secrets)
     , m_gmailEmail(account.type == AccountType::Gmail ? account.email : QString())
 {
@@ -231,13 +231,18 @@ void AccountDialog::updateGmailStatus()
         return;
     }
     m_signIn->setText(signedIn ? tr("Sign in Again…") : tr("Sign in with Google…"));
-    if (!m_googleClient.isValid())
+    const gmail::OAuthClient client = m_googleClient();
+    // Google refuses a desktop app's sign-in without the client's secret.
+    const bool usable = client.isValid() && !client.secret.trimmed().isEmpty();
+    if (!client.isValid())
         m_gmailStatus->setText(tr("Set a Google OAuth client in the settings first."));
+    else if (!usable)
+        m_gmailStatus->setText(tr("Set the Google client secret in the settings first."));
     else if (signedIn && !m_gmailEmail.isEmpty())
         m_gmailStatus->setText(tr("Signed in as %1").arg(m_gmailEmail));
     else
         m_gmailStatus->setText(tr("Not signed in"));
-    m_signIn->setEnabled(m_googleClient.isValid());
+    m_signIn->setEnabled(usable);
 }
 
 void AccountDialog::signIn()
@@ -265,7 +270,7 @@ void AccountDialog::signIn()
                 raise();
                 activateWindow();
             });
-    m_signInFlow->start(m_googleClient);
+    m_signInFlow->start(m_googleClient());
     updateGmailStatus();
 }
 
@@ -341,7 +346,7 @@ void AccountDialog::test()
     m_testResult->setText(tr("Checking…"));
 
     auto run = [this, a](const QString &secret) {
-        MailChecker *checker = a.type == AccountType::Gmail ? static_cast<MailChecker *>(new GmailChecker(m_googleClient, this))
+        MailChecker *checker = a.type == AccountType::Gmail ? static_cast<MailChecker *>(new GmailChecker(m_googleClient(), this))
                                                             : new ImapChecker(this);
         m_testChecker = checker;
         connect(checker, &MailChecker::finished, this, [this, checker](const CheckResult &result) {

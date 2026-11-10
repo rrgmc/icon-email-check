@@ -167,8 +167,11 @@ void MainWindow::buildUi()
     m_clientId->setPlaceholderText(builtIn ? tr("Built-in client") : tr("Not set"));
     googleLayout->addRow(tr("Client ID:"), m_clientId);
     googleLayout->addRow(tr("Client secret:"), m_clientSecret);
-    connect(m_clientId, &QLineEdit::editingFinished, this, &MainWindow::saveGoogleClient);
-    connect(m_clientSecret, &QLineEdit::editingFinished, this, &MainWindow::saveGoogleClient);
+    // Saved as it is typed: on macOS a click on a button leaves the focus in
+    // the field, so a save when the field loses focus would come too late for
+    // the Add Account dialog the click opens.
+    connect(m_clientId, &QLineEdit::textChanged, this, &MainWindow::saveGoogleClient);
+    connect(m_clientSecret, &QLineEdit::textChanged, this, &MainWindow::saveGoogleClient);
     layout->addWidget(google);
 
     setCentralWidget(central);
@@ -245,7 +248,7 @@ void MainWindow::addAccount()
 {
     showAndRaise();
     Account account;
-    AccountDialog dialog(account, false, m_settings->googleClient(), m_secrets, this);
+    AccountDialog dialog(account, false, [this] { return m_settings->googleClient(); }, m_secrets, this);
     if (dialog.exec() != QDialog::Accepted)
         return;
     const Account added = dialog.account();
@@ -268,7 +271,7 @@ void MainWindow::editAccount(const QString &id)
     if (it == accounts.end())
         return;
     showAndRaise();
-    AccountDialog dialog(*it, true, m_settings->googleClient(), m_secrets, this);
+    AccountDialog dialog(*it, true, [this] { return m_settings->googleClient(); }, m_secrets, this);
     if (dialog.exec() != QDialog::Accepted)
         return;
     *it = dialog.account();

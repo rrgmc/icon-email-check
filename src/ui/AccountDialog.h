@@ -6,6 +6,8 @@
 #include <QDialog>
 #include <QPointer>
 
+#include <functional>
+
 class QCheckBox;
 class QComboBox;
 class QLabel;
@@ -28,7 +30,9 @@ class AccountDialog : public QDialog
 
 public:
     // hasSecret: an edited account already has a secret in the keychain.
-    AccountDialog(const Account &account, bool hasSecret, const gmail::OAuthClient &googleClient,
+    // googleClient gives the Google OAuth client of the settings. It is asked
+    // each time it is needed, so a change in the settings window applies at once.
+    AccountDialog(const Account &account, bool hasSecret, std::function<gmail::OAuthClient()> googleClient,
                   SecretStore *secrets, QWidget *parent = nullptr);
     ~AccountDialog() override;
 
@@ -48,7 +52,7 @@ private:
 
     Account m_account;
     bool m_hasSecret;
-    gmail::OAuthClient m_googleClient;
+    std::function<gmail::OAuthClient()> m_googleClient;
     SecretStore *m_secrets;
     QString m_newSecret;
     QString m_gmailEmail;
