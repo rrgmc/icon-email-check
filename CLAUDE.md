@@ -1,6 +1,6 @@
 # Icon Email Check
 
-A tray app for macOS, Windows and Linux that counts unread email, in Qt 6 (C++17, Qt Widgets, CMake). [README.md](README.md) describes the features, the Gmail setup and the build.
+A tray app for macOS, Windows and Linux that counts unread email, in Qt 6 (C++17, Qt Widgets, CMake). [README.md](README.md) describes the app for its users. [DEVELOPMENT.md](DEVELOPMENT.md) describes the build, the Google OAuth client, CI and releases.
 
 ## Git workflow
 

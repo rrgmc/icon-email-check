@@ -58,7 +58,7 @@ option(IEC_WERROR "Treat compiler warnings as errors" OFF)
 # CI takes them from the repository's secrets of the same names, through the
 # environment. Only src/Settings.cpp is compiled with them. A desktop app's
 # client ships inside the app, so this keeps them out of the repository, not
-# out of the app. See README.md#gmail.
+# out of the app. See DEVELOPMENT.md#the-google-oauth-client.
 set(IEC_GOOGLE_CLIENT_ID "$ENV{IEC_GOOGLE_CLIENT_ID}" CACHE STRING "The built-in Google OAuth client ID")
 set(IEC_GOOGLE_CLIENT_SECRET "$ENV{IEC_GOOGLE_CLIENT_SECRET}" CACHE STRING "The built-in Google OAuth client secret")
 if(IEC_GOOGLE_CLIENT_ID AND NOT IEC_GOOGLE_CLIENT_SECRET)

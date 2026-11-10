@@ -252,7 +252,7 @@ jobs:
           HAS_NOTARY_KEY: ${{ secrets.NOTARY_API_KEY != '' }}
         run: |
           if [ "$HAS_CERTIFICATE" != true ] || [ "$HAS_NOTARY_KEY" != true ]; then
-            echo "::warning::The environment \"release\" lacks the Developer ID secrets, so the disk image is signed ad hoc and not notarised. See README.md#releases."
+            echo "::warning::The environment \"release\" lacks the Developer ID secrets, so the disk image is signed ad hoc and not notarised. See DEVELOPMENT.md#continuous-integration-and-releases."
             echo "SIGNING=none" >> "$GITHUB_ENV"
           fi
 
