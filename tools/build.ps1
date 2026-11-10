@@ -56,7 +56,14 @@ try {
     Invoke-Tool cmake --build --preset $Preset
     # The tests load Qt's DLLs from its bin folder.
     $env:PATH = "$(Join-Path $QtDir 'bin');$env:PATH"
-    Invoke-Tool ctest --preset $Preset
+    try {
+        Invoke-Tool ctest --preset $Preset
+    } catch {
+        # Again with each failed test's command, output and exit code.
+        $ErrorActionPreference = 'Continue'
+        & ctest --preset $Preset --rerun-failed --output-on-failure --extra-verbose 2>&1 | ForEach-Object { "$_" }
+        throw
+    }
     if ($Package) {
         $install = Join-Path $Repo "build\$Preset\install"
         if (Test-Path $install) { Remove-Item -Recurse -Force $install }
