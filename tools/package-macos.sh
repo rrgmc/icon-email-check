@@ -31,7 +31,7 @@ until hdiutil create -ov -srcfolder "$STAGE" -volname "Icon Email Check" -fs HFS
     sleep 15
 done
 
-# The layout that the README's install steps describe.
+# The layout that DEVELOPMENT.md's package list describes.
 hdiutil attach -readonly -nobrowse -mountpoint "$MOUNT" "$DMG" > /dev/null
 contents=$(ls "$MOUNT" | tr '\n' ' ')
 hdiutil detach "$MOUNT" > /dev/null
