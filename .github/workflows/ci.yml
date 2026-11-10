@@ -1,6 +1,11 @@
 # Builds, tests and packages every change on Windows, macOS and Linux. The
 # packages are kept for a week as the run's artifacts. They are not signed with
 # a Developer ID; release.yml makes the signed ones.
+#
+# master requires one check, "CI result". A pull request whose files are all
+# Markdown builds nothing, and "CI result" passes on one Linux runner within a
+# minute. Any other pull request builds on all three systems, and "CI result"
+# passes only when every build passed.
 
 name: CI
 # Pull request runs lead with the number. Other runs keep GitHub's default
@@ -11,9 +16,6 @@ on:
   push:
     branches: [master]
     paths-ignore: ['**.md']
-  # Every pull request builds, also one that changes only Markdown files,
-  # because master requires the build checks, and a skipped run would never
-  # report them.
   pull_request:
   workflow_dispatch:
 
@@ -27,9 +29,67 @@ permissions:
   contents: read
 
 jobs:
+  # Decides whether the run builds. A pull request whose files all end in .md
+  # changes no build input, so code is false. Pushes and runs started by hand
+  # always build.
+  changes:
+    runs-on: ubuntu-24.04
+    permissions:
+      pull-requests: read
+    outputs:
+      code: ${{ steps.files.outputs.code }}
+    steps:
+      - name: Changed files
+        id: files
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" != pull_request ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          files=$(gh api --paginate "repos/$GH_REPO/pulls/$PR/files" --jq '.[].filename')
+          echo "$files"
+          if echo "$files" | grep -qvE '\.md$'; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Only Markdown files changed, so nothing is built."
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          fi
+
   build:
+    needs: changes
+    if: needs.changes.outputs.code != 'false'
     uses: ./.github/workflows/build.yml
     # Only the Google client, which the app builds in.
     secrets:
       IEC_GOOGLE_CLIENT_ID: ${{ secrets.IEC_GOOGLE_CLIENT_ID }}
       IEC_GOOGLE_CLIENT_SECRET: ${{ secrets.IEC_GOOGLE_CLIENT_SECRET }}
+
+  # The one check that master requires. It runs whatever happened before it,
+  # and passes when the files were read and the builds passed or were not
+  # needed. A failed, cancelled or missing build fails it.
+  result:
+    name: CI result
+    needs: [changes, build]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check the jobs
+        env:
+          CHANGES: ${{ needs.changes.result }}
+          CODE: ${{ needs.changes.outputs.code }}
+          BUILD: ${{ needs.build.result }}
+        run: |
+          echo "changes: $CHANGES, code: $CODE, build: $BUILD"
+          if [ "$CHANGES" != success ]; then
+            echo "::error::The changed files could not be read."
+            exit 1
+          fi
+          if [ "$BUILD" = success ] || { [ "$CODE" = false ] && [ "$BUILD" = skipped ]; }; then
+            exit 0
+          fi
+          echo "::error::The build did not pass: $BUILD."
+          exit 1
