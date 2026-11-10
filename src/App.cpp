@@ -71,7 +71,6 @@ void App::startTray()
         return;
     }
     m_tray = new platform::Tray(QApplication::applicationDisplayName(), m_menu, this);
-    connect(m_tray, &platform::Tray::triggered, m_window, &MainWindow::toggleVisible);
     connect(m_tray, &platform::Tray::reopened, m_window, &MainWindow::showAndRaise);
     m_notifier = new platform::Notifier(m_tray, this);
     connect(m_notifier, &platform::Notifier::clicked, this, &App::openInbox);

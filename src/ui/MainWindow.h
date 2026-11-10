@@ -35,7 +35,6 @@ public:
 
     void showAndRaise();
     void hideToTray();
-    void toggleVisible();
 
     void addAccount();
     void editAccount(const QString &id);

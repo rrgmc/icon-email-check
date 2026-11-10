@@ -13,9 +13,9 @@ Icon Email Check is a tray app for macOS, Windows and Linux. It counts the unrea
 
 ## Using it
 
-The first start shows the Accounts and Settings window. Choose **Add…** to add an account. Later starts go straight to the tray. To open the window again, click the tray icon, choose **Accounts and Settings…** from its menu, or start the app again.
+The first start shows the Accounts and Settings window. Choose **Add…** to add an account. Later starts go straight to the tray. To open the window again, choose **Accounts and Settings…** from the tray icon's menu, or start the app again.
 
-On macOS, a left click on the menu bar icon shows or hides the window, and a right click or Control-click opens the menu. On Windows and Linux, a left click shows or hides the window, and a right click opens the menu.
+A left or a right click on the tray icon opens its menu.
 
 Closing the window keeps the app running in the tray. **Quit** is in the tray menu, and in the File menu while the window is open.
 

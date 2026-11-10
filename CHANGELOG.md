@@ -11,12 +11,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). A r
 
 ### Changed
 
+- A left click on the tray icon opens its menu, like a right click, instead of showing or hiding the Accounts and Settings window. The window is in the menu.
 - The tray icon is in colour only while mail is unread: a blue envelope with a red dot on macOS, and with the count in a red badge on Windows and Linux. With nothing unread it is plain. When an account cannot be checked, the Windows and Linux icon shows an orange warning mark.
 
 ### Fixed
 
 - "Sign in with Google" failed with "client_secret is missing" when the client secret was typed in the settings and **Add…** clicked right after. The settings now save as they are typed, and the sign-in reads them when it starts. Without a client secret, the Add Account window now says so instead of starting a sign-in that Google refuses.
 - In the Add Account window on macOS, text fields were too narrow for their content, "Signed in as" was cut off, and a Gmail account left an empty gap where the IMAP fields would be.
+- On macOS, clicking the menu bar icon opened the window on the desktop it was last on, and switched to that desktop. It now opens on the current desktop.
 
 ## [0.1.0]
 

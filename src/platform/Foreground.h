@@ -10,8 +10,4 @@ namespace iec::platform {
 // any process may. Elsewhere it does nothing.
 void allowForegroundFor(qint64 pid);
 
-// Whether a window of this app is the one the user is working in. On Windows
-// this asks the system, because Qt's activation state can lag behind.
-bool appIsInFront();
-
 } // namespace iec::platform

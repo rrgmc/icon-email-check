@@ -5,8 +5,10 @@
 // macOS has its own implementation in TrayMac.mm.
 #if !defined(Q_OS_MACOS)
 
+#include <QCursor>
 #include <QIcon>
 #include <QMenu>
+#include <QPointer>
 #include <QSystemTrayIcon>
 
 namespace iec::platform {
@@ -35,9 +37,12 @@ Tray::Tray(const QString &toolTip, QMenu *menu, QObject *parent)
     d->icon = new QSystemTrayIcon(d->noMail, this);
     d->icon->setToolTip(toolTip);
     d->icon->setContextMenu(menu);
-    connect(d->icon, &QSystemTrayIcon::activated, this, [this](QSystemTrayIcon::ActivationReason reason) {
-        if (reason == QSystemTrayIcon::Trigger)
-            emit triggered();
+    // The system opens the menu on a right click. A left click opens it too,
+    // where the cursor is.
+    QPointer<QMenu> guard(menu);
+    connect(d->icon, &QSystemTrayIcon::activated, this, [guard](QSystemTrayIcon::ActivationReason reason) {
+        if (reason == QSystemTrayIcon::Trigger && guard)
+            guard->popup(QCursor::pos());
     });
     connect(d->icon, &QSystemTrayIcon::messageClicked, this, &Tray::messageClicked);
     d->icon->show();

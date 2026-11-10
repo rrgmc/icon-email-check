@@ -71,54 +71,6 @@
 
 @end
 
-// The status item's button action. A left click calls onLeftClick; a right
-// click or a Control-click opens the menu.
-@interface IecTrayClickHandler : NSObject
-- (instancetype)initWithItem:(NSStatusItem *)item
-                        menu:(NSMenu *)menu
-                 onLeftClick:(std::function<void()>)onLeftClick;
-- (void)clicked:(id)sender;
-@end
-
-@implementation IecTrayClickHandler {
-    __weak NSStatusItem *_item;
-    NSMenu *_menu;
-    std::function<void()> _onLeftClick;
-}
-
-- (instancetype)initWithItem:(NSStatusItem *)item
-                        menu:(NSMenu *)menu
-                 onLeftClick:(std::function<void()>)onLeftClick
-{
-    if ((self = [super init])) {
-        _item = item;
-        _menu = menu;
-        _onLeftClick = std::move(onLeftClick);
-    }
-    return self;
-}
-
-- (void)clicked:(id)sender
-{
-    NSEvent *event = NSApp.currentEvent;
-    const bool menuClick = event.type == NSEventTypeRightMouseUp || event.type == NSEventTypeRightMouseDown
-                           || (event.modifierFlags & NSEventModifierFlagControl);
-    if (!menuClick) {
-        _onLeftClick();
-        return;
-    }
-    NSStatusItem *item = _item;
-    if (!item)
-        return;
-    // A status item with a menu opens it on every click, so the menu is set
-    // only while it is shown. performClick: returns once the menu closes.
-    item.menu = _menu;
-    [item.button performClick:nil];
-    item.menu = nil;
-}
-
-@end
-
 @interface IecReopenHandler : NSObject
 - (instancetype)initWithCallback:(std::function<void()>)callback;
 - (void)handleReopen:(NSAppleEventDescriptor *)event withReplyEvent:(NSAppleEventDescriptor *)reply;
@@ -173,7 +125,6 @@ struct Tray::Private
     NSStatusItem *item = nil;
     NSMenu *menu = nil;
     IecTrayMenuDelegate *delegate = nil;
-    IecTrayClickHandler *clickHandler = nil;
     IecReopenHandler *reopenHandler = nil;
     NSImage *noMail = nil;
     NSImage *unread = nil;
@@ -228,19 +179,8 @@ Tray::Tray(const QString &toolTip, QMenu *menu, QObject *parent)
     d->item = [NSStatusBar.systemStatusBar statusItemWithLength:NSSquareStatusItemLength];
     d->item.button.image = d->noMail;
     d->item.button.toolTip = toolTip.toNSString();
-    QPointer<Tray> tray(this);
-    d->clickHandler = [[IecTrayClickHandler alloc] initWithItem:d->item
-                                                               menu:d->menu
-                                                        onLeftClick:[tray] {
-                                                            // Toggle once AppKit has handled the click.
-                                                            if (tray)
-                                                                QMetaObject::invokeMethod(
-                                                                    tray.data(), [tray] { emit tray->triggered(); },
-                                                                    Qt::QueuedConnection);
-                                                        }];
-    d->item.button.target = d->clickHandler;
-    d->item.button.action = @selector(clicked:);
-    [d->item.button sendActionOn:NSEventMaskLeftMouseUp | NSEventMaskRightMouseUp];
+    // Any click opens the menu, as with other menu bar items.
+    d->item.menu = d->menu;
 
     IecReopenHandler *handler = [[IecReopenHandler alloc] initWithCallback:[this] { emit reopened(); }];
     d->reopenHandler = handler;
