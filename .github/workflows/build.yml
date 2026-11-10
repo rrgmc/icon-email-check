@@ -76,7 +76,6 @@ jobs:
         os: [windows-2022, macos-15, ubuntu-24.04]
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
-      IEC_QT_ROOT: ${{ runner.temp }}/qt
     steps:
       - uses: actions/checkout@v7
 
@@ -127,11 +126,15 @@ jobs:
       - name: Build, test and package (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
+        env:
+          IEC_QT_ROOT: ${{ runner.temp }}/qt
         run: ./tools/build.ps1 -Preset ci -Version "$env:VERSION" -Package
 
       # Universal on macOS, for Apple silicon and Intel.
       - name: Build and test (macOS, Linux)
         if: runner.os != 'Windows'
+        env:
+          IEC_QT_ROOT: ${{ runner.temp }}/qt
         run: |
           QT_DIR=$(sh tools/setup-qt.sh)
           if [ "$RUNNER_OS" = macOS ]; then
@@ -234,6 +237,8 @@ jobs:
           rm "$RUNNER_TEMP/certificate.p12"
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s \
             -k "$keychain_password" "$keychain" > /dev/null
+          # The existing keychains, one word each, follow the new one.
+          # shellcheck disable=SC2046
           security list-keychains -d user -s "$keychain" \
             $(security list-keychains -d user | tr -d '"')
 

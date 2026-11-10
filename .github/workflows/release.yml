@@ -54,7 +54,7 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           ls -l packages
-          count=$(ls packages | wc -l)
+          count=$(find packages -type f | wc -l)
           if [ "$count" -ne 3 ]; then
             echo "::error::Expected 3 packages, found $count."
             exit 1
