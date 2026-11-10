@@ -101,3 +101,5 @@ The tray, the Dock and starting at sign-in follow the approach of the Mirante pr
 ## Screenshots
 
 The README's screenshots are in `docs/screenshots/`. Replace them when the window or the menu changes visibly.
+
+They show made-up accounts and messages, never real ones. The current ones come from a Windows build configured with `-DIEC_GOOGLE_CLIENT_SETTINGS=OFF`, so the settings window has no **Google sign-in** section, as in the released packages. Back up the app's settings before replacing its accounts with made-up ones, and restore them afterwards.

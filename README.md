@@ -2,6 +2,12 @@
 
 Icon Email Check is a tray app for macOS, Windows and Linux. It counts the unread email in one or more accounts and shows the count on its icon.
 
+<p align="center">
+  <img src="docs/screenshots/tray-menu-windows.png" alt="The tray menu on Windows, with the newest unread messages of two accounts" width="280">
+  &nbsp;
+  <img src="docs/screenshots/settings-windows.png" alt="The Accounts and Settings window, with three accounts and their unread counts" width="480">
+</p>
+
 ## Features
 
 - **Gmail**, after "Sign in with Google".
@@ -24,7 +30,13 @@ Download the package for your system from the [latest release](https://github.co
 
 ## Using it
 
-The first start shows the Accounts and Settings window. Choose **Add…** to add an account. Later starts go straight to the tray. To open the window again, choose **Accounts and Settings…** from the tray icon's menu, or start the app again.
+The first start shows the Accounts and Settings window. Choose **Add…** to add an account.
+
+<p align="center">
+  <img src="docs/screenshots/add-account-windows.png" alt="The Add Account window, set up for an iCloud Mail account" width="440">
+</p>
+
+Later starts go straight to the tray. To open the window again, choose **Accounts and Settings…** from the tray icon's menu, or start the app again.
 
 A left or a right click on the tray icon opens its menu.
 
