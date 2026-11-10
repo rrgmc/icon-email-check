@@ -14,7 +14,7 @@ class QLabel;
 class QLineEdit;
 class QPushButton;
 class QSpinBox;
-class QStackedWidget;
+class QFormLayout;
 
 namespace iec {
 
@@ -44,6 +44,8 @@ public:
 
 private:
     void typeChanged();
+    // Shows the rows of the chosen type, and the provider's help when it has one.
+    void updateRows();
     void presetChanged();
     void signIn();
     void test();
@@ -59,15 +61,18 @@ private:
 
     QComboBox *m_type = nullptr;
     QLineEdit *m_name = nullptr;
-    QStackedWidget *m_pages = nullptr;
+    QFormLayout *m_form = nullptr;
     // Gmail
     QLabel *m_gmailStatus = nullptr;
     QPushButton *m_signIn = nullptr;
+    QWidget *m_signInRow = nullptr;
     QLineEdit *m_gmailQuery = nullptr;
     // IMAP
     QComboBox *m_preset = nullptr;
+    QWidget *m_presetRow = nullptr;
     QLineEdit *m_host = nullptr;
     QSpinBox *m_port = nullptr;
+    QWidget *m_portRow = nullptr;
     QComboBox *m_security = nullptr;
     QLineEdit *m_username = nullptr;
     QLineEdit *m_password = nullptr;

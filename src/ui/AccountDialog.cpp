@@ -9,14 +9,12 @@
 #include <QComboBox>
 #include <QDialogButtonBox>
 #include <QFormLayout>
-#include <QGroupBox>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QSpinBox>
-#include <QStackedWidget>
 #include <QUuid>
 #include <QVBoxLayout>
 
@@ -65,111 +63,124 @@ AccountDialog::AccountDialog(const Account &account, bool hasSecret,
     if (m_account.id.isEmpty())
         m_account.id = QUuid::createUuid().toString(QUuid::WithoutBraces);
 
+    // One form for every row, so all labels share one column. The rows of
+    // the type that is not chosen are hidden, and take no space.
     auto *layout = new QVBoxLayout(this);
-    auto *top = new QFormLayout;
+    m_form = new QFormLayout;
+    // On macOS fields keep their preferred width by default, which is too
+    // narrow for addresses and placeholders.
+    m_form->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
+    m_form->setRowWrapPolicy(QFormLayout::DontWrapRows);
+    layout->addLayout(m_form);
+
+    // A widget that keeps its own width at the left of the field column.
+    auto atLeft = [](QWidget *widget) {
+        auto *holder = new QWidget;
+        auto *row = new QHBoxLayout(holder);
+        row->setContentsMargins(0, 0, 0, 0);
+        row->addWidget(widget);
+        row->addStretch(1);
+        return holder;
+    };
+
     m_type = new QComboBox;
     m_type->addItem(tr("Gmail: sign in with Google"), int(AccountType::Gmail));
     m_type->addItem(tr("IMAP: any mail server"), int(AccountType::Imap));
     m_type->setCurrentIndex(account.type == AccountType::Imap ? 1 : 0);
-    top->addRow(tr("Type:"), m_type);
+    m_form->addRow(tr("Type:"), atLeft(m_type));
     m_name = new QLineEdit(account.name);
     m_name->setPlaceholderText(tr("Shown in the menu, such as \"Personal\""));
-    top->addRow(tr("Name:"), m_name);
-    layout->addLayout(top);
+    m_form->addRow(tr("Name:"), m_name);
 
-    m_pages = new QStackedWidget;
-    // Gmail page.
-    {
-        auto *page = new QWidget;
-        auto *form = new QFormLayout(page);
-        form->setContentsMargins(0, 0, 0, 0);
-        m_gmailStatus = new QLabel;
-        m_gmailStatus->setWordWrap(true);
-        m_signIn = new QPushButton(tr("Sign in with Google…"));
-        auto *row = new QHBoxLayout;
-        row->addWidget(m_gmailStatus, 1);
-        row->addWidget(m_signIn);
-        form->addRow(tr("Account:"), row);
-        m_gmailQuery = new QLineEdit(account.gmailQuery);
-        m_gmailQuery->setPlaceholderText(tr("Empty: unread messages in the inbox"));
-        m_gmailQuery->setToolTip(tr("A Gmail search, such as \"is:unread category:primary\" or \"is:unread label:work\"."));
-        form->addRow(tr("Count:"), m_gmailQuery);
-        m_pages->addWidget(page);
-        connect(m_signIn, &QPushButton::clicked, this, &AccountDialog::signIn);
-    }
-    // IMAP page.
-    {
-        auto *page = new QWidget;
-        auto *form = new QFormLayout(page);
-        form->setContentsMargins(0, 0, 0, 0);
-        m_preset = new QComboBox;
-        for (const Preset &preset : presets)
-            m_preset->addItem(tr(preset.name));
-        form->addRow(tr("Provider:"), m_preset);
-        m_presetHelp = new QLabel;
-        m_presetHelp->setWordWrap(true);
-        m_presetHelp->setVisible(false);
-        form->addRow(QString(), m_presetHelp);
-        m_host = new QLineEdit(account.host);
-        m_host->setPlaceholderText(tr("imap.example.com"));
-        form->addRow(tr("Server:"), m_host);
-        auto *portRow = new QHBoxLayout;
-        m_port = new QSpinBox;
-        m_port->setRange(1, 65535);
-        m_port->setValue(account.port);
-        m_security = new QComboBox;
-        m_security->addItem(tr("TLS"), int(ImapSecurity::Tls));
-        m_security->addItem(tr("STARTTLS"), int(ImapSecurity::StartTls));
-        m_security->addItem(tr("None (unsafe)"), int(ImapSecurity::None));
-        m_security->setCurrentIndex(m_security->findData(int(account.security)));
-        portRow->addWidget(m_port);
-        portRow->addWidget(m_security, 1);
-        form->addRow(tr("Port:"), portRow);
-        m_username = new QLineEdit(account.username);
-        m_username->setPlaceholderText(tr("Usually the email address"));
-        form->addRow(tr("User name:"), m_username);
-        m_password = new QLineEdit;
-        m_password->setEchoMode(QLineEdit::Password);
-        if (hasSecret && account.type == AccountType::Imap)
-            m_password->setPlaceholderText(tr("Saved; type to change"));
-        form->addRow(tr("Password:"), m_password);
-        m_folder = new QLineEdit(account.folder);
-        form->addRow(tr("Folder:"), m_folder);
-        m_pages->addWidget(page);
-        // Pick the preset that matches the saved server.
-        for (int i = 1; i < int(std::size(presets)); ++i) {
-            if (account.host.compare(QLatin1String(presets[i].host), Qt::CaseInsensitive) == 0)
-                m_preset->setCurrentIndex(i);
-        }
-        connect(m_preset, &QComboBox::currentIndexChanged, this, &AccountDialog::presetChanged);
-        connect(m_security, &QComboBox::currentIndexChanged, this, [this] {
-            const auto security = ImapSecurity(m_security->currentData().toInt());
-            if (security == ImapSecurity::Tls && m_port->value() == 143)
-                m_port->setValue(993);
-            else if (security != ImapSecurity::Tls && m_port->value() == 993)
-                m_port->setValue(143);
-        });
-    }
-    layout->addWidget(m_pages);
+    // Gmail rows.
+    m_gmailStatus = new QLabel;
+    m_gmailStatus->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    m_form->addRow(tr("Account:"), m_gmailStatus);
+    m_signIn = new QPushButton(tr("Sign in with Google…"));
+    m_signInRow = atLeft(m_signIn);
+    m_form->addRow(QString(), m_signInRow);
+    m_gmailQuery = new QLineEdit(account.gmailQuery);
+    m_gmailQuery->setPlaceholderText(tr("Empty: unread messages in the inbox"));
+    m_gmailQuery->setToolTip(tr("A Gmail search, such as \"is:unread category:primary\" or \"is:unread label:work\"."));
+    m_form->addRow(tr("Count:"), m_gmailQuery);
+    connect(m_signIn, &QPushButton::clicked, this, &AccountDialog::signIn);
 
-    auto *common = new QGroupBox(tr("Checking"));
-    auto *form = new QFormLayout(common);
+    // IMAP rows.
+    m_preset = new QComboBox;
+    for (const Preset &preset : presets)
+        m_preset->addItem(tr(preset.name));
+    m_presetRow = atLeft(m_preset);
+    m_form->addRow(tr("Provider:"), m_presetRow);
+    m_presetHelp = new QLabel;
+    m_presetHelp->setWordWrap(true);
+    m_form->addRow(QString(), m_presetHelp);
+    m_host = new QLineEdit(account.host);
+    m_host->setPlaceholderText(tr("imap.example.com"));
+    m_form->addRow(tr("Server:"), m_host);
+    m_port = new QSpinBox;
+    m_port->setRange(1, 65535);
+    m_port->setValue(account.port);
+    m_security = new QComboBox;
+    m_security->addItem(tr("TLS"), int(ImapSecurity::Tls));
+    m_security->addItem(tr("STARTTLS"), int(ImapSecurity::StartTls));
+    m_security->addItem(tr("None (unsafe)"), int(ImapSecurity::None));
+    m_security->setCurrentIndex(m_security->findData(int(account.security)));
+    m_portRow = new QWidget;
+    {
+        auto *row = new QHBoxLayout(m_portRow);
+        row->setContentsMargins(0, 0, 0, 0);
+        row->addWidget(m_port);
+        row->addWidget(m_security);
+        row->addStretch(1);
+    }
+    m_form->addRow(tr("Port:"), m_portRow);
+    m_username = new QLineEdit(account.username);
+    m_username->setPlaceholderText(tr("Usually the email address"));
+    m_form->addRow(tr("User name:"), m_username);
+    m_password = new QLineEdit;
+    m_password->setEchoMode(QLineEdit::Password);
+    if (hasSecret && account.type == AccountType::Imap)
+        m_password->setPlaceholderText(tr("Saved; type to change"));
+    m_form->addRow(tr("Password:"), m_password);
+    m_folder = new QLineEdit(account.folder);
+    m_form->addRow(tr("Folder:"), m_folder);
+    // Pick the preset that matches the saved server.
+    for (int i = 1; i < int(std::size(presets)); ++i) {
+        if (account.host.compare(QLatin1String(presets[i].host), Qt::CaseInsensitive) == 0)
+            m_preset->setCurrentIndex(i);
+    }
+    connect(m_preset, &QComboBox::currentIndexChanged, this, &AccountDialog::presetChanged);
+    connect(m_security, &QComboBox::currentIndexChanged, this, [this] {
+        const auto security = ImapSecurity(m_security->currentData().toInt());
+        if (security == ImapSecurity::Tls && m_port->value() == 143)
+            m_port->setValue(993);
+        else if (security != ImapSecurity::Tls && m_port->value() == 993)
+            m_port->setValue(143);
+    });
+
+    // Rows for both types.
+    auto *checking = new QLabel(tr("Checking"));
+    QFont bold = checking->font();
+    bold.setBold(true);
+    checking->setFont(bold);
+    checking->setContentsMargins(0, 8, 0, 0);
+    m_form->addRow(checking);
     m_interval = new QSpinBox;
     m_interval->setRange(1, 24 * 60);
     m_interval->setSuffix(tr(" min"));
     m_interval->setValue(account.intervalMinutes);
-    form->addRow(tr("Check every:"), m_interval);
+    m_form->addRow(tr("Check every:"), atLeft(m_interval));
     m_notify = new QCheckBox(tr("Notify me of new email"));
     m_notify->setChecked(account.notify);
-    form->addRow(QString(), m_notify);
+    m_form->addRow(QString(), m_notify);
     m_enabled = new QCheckBox(tr("Check this account"));
     m_enabled->setChecked(account.enabled);
-    form->addRow(QString(), m_enabled);
+    m_form->addRow(QString(), m_enabled);
     m_webUrl = new QLineEdit(account.webUrl);
     m_webUrl->setPlaceholderText(tr("Empty: Gmail's inbox for Gmail accounts"));
     m_webUrl->setToolTip(tr("Opened when you click the account in the menu or a notification."));
-    form->addRow(tr("Web page:"), m_webUrl);
-    layout->addWidget(common);
+    m_form->addRow(tr("Web page:"), m_webUrl);
+    layout->addStretch(1);
 
     m_testResult = new QLabel;
     m_testResult->setWordWrap(true);
@@ -184,13 +195,10 @@ AccountDialog::AccountDialog(const Account &account, bool hasSecret,
     layout->addWidget(buttons);
 
     connect(m_type, &QComboBox::currentIndexChanged, this, &AccountDialog::typeChanged);
-    typeChanged();
+    m_presetHelp->setText(tr(presets[m_preset->currentIndex()].help));
     updateGmailStatus();
-    if (m_preset->currentIndex() > 0) {
-        m_presetHelp->setText(tr(presets[m_preset->currentIndex()].help));
-        m_presetHelp->setVisible(true);
-    }
-    resize(sizeHint().width() + 80, sizeHint().height());
+    setMinimumWidth(520);
+    typeChanged();
 }
 
 AccountDialog::~AccountDialog()
@@ -201,20 +209,28 @@ AccountDialog::~AccountDialog()
 
 void AccountDialog::typeChanged()
 {
-    m_pages->setCurrentIndex(m_type->currentIndex());
-    // The hidden page must not decide the dialog's height.
-    for (int i = 0; i < m_pages->count(); ++i)
-        m_pages->widget(i)->setSizePolicy(QSizePolicy::Preferred,
-                                          i == m_pages->currentIndex() ? QSizePolicy::Preferred : QSizePolicy::Ignored);
-    m_pages->adjustSize();
+    updateRows();
+    // The dialog fits the rows of the chosen type.
     adjustSize();
+}
+
+void AccountDialog::updateRows()
+{
+    const bool gmail = AccountType(m_type->currentData().toInt()) == AccountType::Gmail;
+    const QList<QWidget *> gmailFields{m_gmailStatus, m_signInRow, m_gmailQuery};
+    const QList<QWidget *> imapFields{m_presetRow, m_host, m_portRow, m_username, m_password, m_folder};
+    for (QWidget *field : gmailFields)
+        m_form->setRowVisible(field, gmail);
+    for (QWidget *field : imapFields)
+        m_form->setRowVisible(field, !gmail);
+    m_form->setRowVisible(m_presetHelp, !gmail && m_preset->currentIndex() > 0);
 }
 
 void AccountDialog::presetChanged()
 {
     const Preset &preset = presets[m_preset->currentIndex()];
     m_presetHelp->setText(tr(preset.help));
-    m_presetHelp->setVisible(m_preset->currentIndex() > 0);
+    updateRows();
     if (m_preset->currentIndex() == 0)
         return;
     m_host->setText(QLatin1String(preset.host));
