@@ -14,7 +14,8 @@ namespace iec::platform {
 struct Tray::Private
 {
     QSystemTrayIcon *icon = nullptr;
-    QIcon normal;
+    QIcon noMail;
+    QIcon unread;
     QIcon problem;
     State state = State::NoMail;
     int count = 0;
@@ -26,9 +27,12 @@ Tray::Tray(const QString &toolTip, QMenu *menu, QObject *parent)
     : QObject(parent)
     , d(std::make_unique<Private>())
 {
-    d->normal = QIcon(QStringLiteral(":/icons/tray.svg"));
+    // A grey outline while nothing is unread, and in colour with the count
+    // while something is, so unread mail stands out.
+    d->noMail = QIcon(QStringLiteral(":/icons/tray-idle.svg"));
+    d->unread = QIcon(QStringLiteral(":/icons/tray.svg"));
     d->problem = QIcon(QStringLiteral(":/icons/tray-error.svg"));
-    d->icon = new QSystemTrayIcon(d->normal, this);
+    d->icon = new QSystemTrayIcon(d->noMail, this);
     d->icon->setToolTip(toolTip);
     d->icon->setContextMenu(menu);
     connect(d->icon, &QSystemTrayIcon::activated, this, [this](QSystemTrayIcon::ActivationReason reason) {
@@ -47,7 +51,7 @@ void Tray::setState(State state, int count)
         return;
     d->state = state;
     d->count = count;
-    const QIcon &base = state == State::Problem ? d->problem : d->normal;
+    const QIcon &base = state == State::Problem ? d->problem : (count > 0 ? d->unread : d->noMail);
     d->icon->setIcon(withTrayBadge(base, count));
 }
 

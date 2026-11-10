@@ -1,5 +1,6 @@
 #include "ui/AccountDialog.h"
 
+#include "Settings.h"
 #include "accounts/SecretStore.h"
 #include "mail/GmailChecker.h"
 #include "mail/GoogleSignIn.h"
@@ -250,7 +251,9 @@ void AccountDialog::updateGmailStatus()
     const gmail::OAuthClient client = m_googleClient();
     // Google refuses a desktop app's sign-in without the client's secret.
     const bool usable = client.isValid() && !client.secret.trimmed().isEmpty();
-    if (!client.isValid())
+    if (!client.isValid() && !Settings::googleClientSettings)
+        m_gmailStatus->setText(tr("This build has no Google client. Use an IMAP account instead."));
+    else if (!client.isValid())
         m_gmailStatus->setText(tr("Set a Google OAuth client in the settings first."));
     else if (!usable)
         m_gmailStatus->setText(tr("Set the Google client secret in the settings first."));

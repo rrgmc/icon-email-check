@@ -150,8 +150,30 @@ void MainWindow::buildUi()
     connect(m_startHidden, &QCheckBox::toggled, this, [this](bool on) { m_settings->setStartHidden(on); });
     connect(m_notifications, &QCheckBox::toggled, this, [this](bool on) { m_settings->setNotifications(on); });
 
+    if (Settings::googleClientSettings)
+        buildGoogleSettings(layout);
+
+    setCentralWidget(central);
+
+
+    // macOS puts Quit and About in the app menu by their roles.
+    QMenu *file = menuBar()->addMenu(tr("&File"));
+    file->addAction(tr("&Add Account…"), QKeySequence::New, this, &MainWindow::addAccount);
+    file->addAction(tr("&Check All Now"), QKeySequence::Refresh, m_monitor, &MailMonitor::checkAllNow);
+    file->addSeparator();
+    file->addAction(tr("&Close Window"), QKeySequence::Close, this, &QWidget::close);
+    QAction *quit = file->addAction(tr("&Quit"), QKeySequence::Quit, qApp, &QApplication::quit);
+    quit->setMenuRole(QAction::QuitRole);
+    QMenu *help = menuBar()->addMenu(tr("&Help"));
+    QAction *about = help->addAction(tr("&About"), this, &MainWindow::showAbout);
+    about->setMenuRole(QAction::AboutRole);
+}
+
+void MainWindow::buildGoogleSettings(QVBoxLayout *layout)
+{
     auto *google = new QGroupBox(tr("Google sign-in"));
     auto *googleLayout = new QFormLayout(google);
+    googleLayout->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
     auto *googleHelp = new QLabel(
         tr("Gmail accounts sign in through a Google OAuth client of type \"Desktop app\". "
            "<a href=\"%1\">How to make one</a>. Leave empty to use the built-in client, if this build has one.")
@@ -173,20 +195,6 @@ void MainWindow::buildUi()
     connect(m_clientId, &QLineEdit::textChanged, this, &MainWindow::saveGoogleClient);
     connect(m_clientSecret, &QLineEdit::textChanged, this, &MainWindow::saveGoogleClient);
     layout->addWidget(google);
-
-    setCentralWidget(central);
-
-    // macOS puts Quit and About in the app menu by their roles.
-    QMenu *file = menuBar()->addMenu(tr("&File"));
-    file->addAction(tr("&Add Account…"), QKeySequence::New, this, &MainWindow::addAccount);
-    file->addAction(tr("&Check All Now"), QKeySequence::Refresh, m_monitor, &MailMonitor::checkAllNow);
-    file->addSeparator();
-    file->addAction(tr("&Close Window"), QKeySequence::Close, this, &QWidget::close);
-    QAction *quit = file->addAction(tr("&Quit"), QKeySequence::Quit, qApp, &QApplication::quit);
-    quit->setMenuRole(QAction::QuitRole);
-    QMenu *help = menuBar()->addMenu(tr("&Help"));
-    QAction *about = help->addAction(tr("&About"), this, &MainWindow::showAbout);
-    about->setMenuRole(QAction::AboutRole);
 }
 
 void MainWindow::setTray(platform::Tray *tray)
@@ -336,6 +344,8 @@ void MainWindow::setStartAtSignIn(bool on)
 
 void MainWindow::saveGoogleClient()
 {
+    if (!m_clientId)
+        return;
     const gmail::OAuthClient client{m_clientId->text().trimmed(), m_clientSecret->text().trimmed()};
     const gmail::OAuthClient before = m_settings->customGoogleClient();
     if (client.id == before.id && client.secret == before.secret)
@@ -347,7 +357,8 @@ void MainWindow::showAbout()
 {
     QMessageBox::about(this, tr("About %1").arg(QApplication::applicationDisplayName()),
                        tr("<h3>%1 %2</h3><p>Counts unread email in the tray.</p>"
-                          "<p><a href=\"https://github.com/rrgmc/icon-email-check\">github.com/rrgmc/icon-email-check</a></p>")
+                          "<p><a href=\"https://github.com/rrgmc/icon-email-check\">github.com/rrgmc/icon-email-check</a></p>"
+                          "<p><a href=\"https://rrgmc.github.io/icon-email-check/privacy.html\">Privacy policy</a></p>")
                            .arg(QApplication::applicationDisplayName(), QApplication::applicationVersion()));
 }
 

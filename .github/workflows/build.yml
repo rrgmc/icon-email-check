@@ -9,8 +9,10 @@
 #         macos-signing: developer-id           # sign and notarise
 #       secrets: inherit
 #
-# The build jobs hold no secrets. On macOS, a separate job signs the finished
-# bundle and makes the disk image; it runs nothing from the build. Its
+# The build jobs hold only the Google OAuth client, which the app needs at
+# build time and which ships inside it anyway. On macOS, a separate job signs
+# the finished bundle and makes the disk image; it runs nothing from the build,
+# and only it reads the signing secrets. Its
 # artifact, and those of Windows and Linux, are named icon-email-check-<OS>.
 
 name: Build
@@ -26,6 +28,29 @@ on:
         description: none signs ad hoc. developer-id signs and notarises with the secrets of the environment "release", or signs ad hoc with a warning when they are missing
         type: string
         default: none
+    secrets:
+      IEC_GOOGLE_CLIENT_ID:
+        description: The Google OAuth client ID to build in. Without it, the app has no built-in client
+        required: false
+      IEC_GOOGLE_CLIENT_SECRET:
+        description: That client's secret
+        required: false
+      # The signing job reads these from the environment "release".
+      MACOS_CERTIFICATE_P12:
+        description: The Developer ID Application certificate and key, as a base64 .p12 file
+        required: false
+      MACOS_CERTIFICATE_PASSWORD:
+        description: The password of that .p12 file
+        required: false
+      NOTARY_API_KEY:
+        description: An App Store Connect API key, the contents of its .p8 file
+        required: false
+      NOTARY_API_KEY_ID:
+        description: That key's ID
+        required: false
+      NOTARY_API_ISSUER:
+        description: That key's issuer ID
+        required: false
     outputs:
       version:
         description: The version this run built
@@ -76,6 +101,10 @@ jobs:
         os: [windows-2022, macos-15, ubuntu-24.04]
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
+      # CMake reads these at configure time. A pull request from a fork gets
+      # no secrets, and builds without a client.
+      IEC_GOOGLE_CLIENT_ID: ${{ secrets.IEC_GOOGLE_CLIENT_ID }}
+      IEC_GOOGLE_CLIENT_SECRET: ${{ secrets.IEC_GOOGLE_CLIENT_SECRET }}
     steps:
       - uses: actions/checkout@v7
 

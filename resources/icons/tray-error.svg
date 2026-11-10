@@ -1,4 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
-  <rect x="4" y="12" width="56" height="40" rx="6" fill="#8a8a8a"/>
-  <path d="M8 17 L32 35 L56 17" fill="none" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <defs>
+    <mask id="cut">
+      <rect width="64" height="64" fill="#ffffff"/>
+      <circle cx="50" cy="46" r="15" fill="#000000"/>
+    </mask>
+  </defs>
+  <g mask="url(#cut)">
+    <rect x="4" y="12" width="56" height="40" rx="6" fill="#8a8a8a"/>
+    <path d="M8 17 L32 35 L56 17" fill="none" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <circle cx="50" cy="46" r="12" fill="#f59e0b"/>
+  <path d="M50 39 L50 47" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="50" cy="52.5" r="2.2" fill="#ffffff"/>
 </svg>

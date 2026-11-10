@@ -26,8 +26,13 @@ public:
     bool notifications() const;
     void setNotifications(bool on);
 
+    // Whether the settings window lets the user set their own Google OAuth
+    // client: the CMake option IEC_GOOGLE_CLIENT_SETTINGS.
+    static constexpr bool googleClientSettings = IEC_GOOGLE_CLIENT_SETTINGS;
+
     // The OAuth client set in the settings window, or the one built in with
-    // IEC_GOOGLE_CLIENT_ID when none is set.
+    // IEC_GOOGLE_CLIENT_ID when none is set. Without the settings section, a
+    // client saved by an earlier build is ignored, since it cannot be changed.
     gmail::OAuthClient googleClient() const;
     // Only what the user typed; empty when the built-in client is used.
     gmail::OAuthClient customGoogleClient() const;

@@ -144,9 +144,9 @@
 
 namespace {
 
-// A template image: macOS uses only its alpha and draws it in the menu bar's
-// colour.
-NSImage *toTemplateImage(const QIcon &icon)
+// The icon as a menu bar image. A template image is drawn by macOS from its
+// alpha only, in the menu bar's colour; any other image keeps its colours.
+NSImage *toStatusImage(const QIcon &icon, bool isTemplate)
 {
     const NSSize size = NSMakeSize(18, 18);
     NSImage *image = [[NSImage alloc] initWithSize:size];
@@ -160,7 +160,7 @@ NSImage *toTemplateImage(const QIcon &icon)
         rep.size = size;
         [image addRepresentation:rep];
     }
-    [image setTemplate:YES];    // "template" is a C++ keyword
+    [image setTemplate:isTemplate ? YES : NO];    // "template" is a C++ keyword
     return image;
 }
 
@@ -215,9 +215,11 @@ Tray::Tray(const QString &toolTip, QMenu *menu, QObject *parent)
     : QObject(parent)
     , d(std::make_unique<Private>())
 {
-    d->noMail = toTemplateImage(QIcon(QStringLiteral(":/icons/tray-mono.svg")));
-    d->unread = toTemplateImage(QIcon(QStringLiteral(":/icons/tray-mono-unread.svg")));
-    d->problem = toTemplateImage(QIcon(QStringLiteral(":/icons/tray-mono-error.svg")));
+    // In the menu bar's colour while nothing is unread, and in colour while
+    // something is, so unread mail stands out.
+    d->noMail = toStatusImage(QIcon(QStringLiteral(":/icons/tray-mono.svg")), true);
+    d->unread = toStatusImage(QIcon(QStringLiteral(":/icons/tray-unread.svg")), false);
+    d->problem = toStatusImage(QIcon(QStringLiteral(":/icons/tray-mono-error.svg")), true);
     d->delegate = [[IecTrayMenuDelegate alloc] initWithMenu:menu];
     d->menu = [[NSMenu alloc] init];
     d->menu.autoenablesItems = NO;

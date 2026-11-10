@@ -4,6 +4,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). A r
 
 ## [Unreleased]
 
+### Added
+
+- Packages built by CI carry a Google OAuth client, from the repository's secrets, so "Sign in with Google" works without setting one up. The CMake option `IEC_GOOGLE_CLIENT_SETTINGS` shows or hides the settings window's Google sign-in section; it is hidden when a client is built in.
+- A privacy policy, published with GitHub Pages from `docs/`, and linked from the About window.
+
+### Changed
+
+- The tray icon is in colour only while mail is unread: a blue envelope with a red dot on macOS, and with the count in a red badge on Windows and Linux. With nothing unread it is plain. When an account cannot be checked, the Windows and Linux icon shows an orange warning mark.
+
 ### Fixed
 
 - "Sign in with Google" failed with "client_secret is missing" when the client secret was typed in the settings and **Add…** clicked right after. The settings now save as they are typed, and the sign-in reads them when it starts. Without a client secret, the Add Account window now says so instead of starting a sign-in that Google refuses.

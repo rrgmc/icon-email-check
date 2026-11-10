@@ -28,8 +28,10 @@ target_include_directories(iec_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(iec_core PUBLIC Qt6::Widgets Qt6::Network Qt6::Svg qt6keychain)
 target_compile_definitions(iec_core PUBLIC
     IEC_VERSION="${PROJECT_VERSION}"
-    IEC_GOOGLE_CLIENT_ID="${IEC_GOOGLE_CLIENT_ID}"
-    IEC_GOOGLE_CLIENT_SECRET="${IEC_GOOGLE_CLIENT_SECRET}")
+    IEC_GOOGLE_CLIENT_SETTINGS=$<BOOL:${IEC_GOOGLE_CLIENT_SETTINGS}>)
+# The built-in Google client, in the one file that reads it.
+set_source_files_properties(Settings.cpp PROPERTIES COMPILE_DEFINITIONS
+    "IEC_GOOGLE_CLIENT_ID=\"${IEC_GOOGLE_CLIENT_ID}\";IEC_GOOGLE_CLIENT_SECRET=\"${IEC_GOOGLE_CLIENT_SECRET}\"")
 iec_set_warnings(iec_core)
 
 # macOS code in Objective-C++, built with ARC.
@@ -48,9 +50,10 @@ qt_add_resources(iec_core icons
     FILES
         "${PROJECT_SOURCE_DIR}/resources/icons/app.svg"
         "${PROJECT_SOURCE_DIR}/resources/icons/tray.svg"
+        "${PROJECT_SOURCE_DIR}/resources/icons/tray-idle.svg"
+        "${PROJECT_SOURCE_DIR}/resources/icons/tray-unread.svg"
         "${PROJECT_SOURCE_DIR}/resources/icons/tray-error.svg"
         "${PROJECT_SOURCE_DIR}/resources/icons/tray-mono.svg"
-        "${PROJECT_SOURCE_DIR}/resources/icons/tray-mono-unread.svg"
         "${PROJECT_SOURCE_DIR}/resources/icons/tray-mono-error.svg")
 
 qt_add_executable(IconEmailCheck WIN32 MACOSX_BUNDLE main.cpp)

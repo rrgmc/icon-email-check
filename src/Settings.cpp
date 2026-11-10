@@ -34,6 +34,8 @@ void Settings::setNotifications(bool on) { QSettings().setValue(QStringLiteral("
 
 gmail::OAuthClient Settings::googleClient() const
 {
+    if (!googleClientSettings)
+        return builtInGoogleClient();
     const gmail::OAuthClient custom = customGoogleClient();
     return custom.isValid() ? custom : builtInGoogleClient();
 }
