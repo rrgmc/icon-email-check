@@ -59,11 +59,11 @@ QImage paintAccountDots(const QImage &image, const QList<QColor> &colours)
     QImage result = image.convertToFormat(QImage::Format_ARGB32_Premultiplied);
     const qreal side = qMin(result.width(), result.height());
     const int dots = qMin<int>(maxAccountDots, int(colours.size()));
-    // Three dots and their gaps fill the width, so the dots stay visible on a
-    // 16 pixel icon. They sit in the margin above the envelope and overlap its
-    // top edge a little; the badge is in the lower two thirds.
-    const qreal diameter = side * 0.3;
-    const qreal gap = side * 0.04;
+    // Small dots in a row centred along the top edge. They sit in the margin
+    // above the envelope and overlap its top edge a little; the badge is in
+    // the lower two thirds.
+    const qreal diameter = side * 0.2;
+    const qreal gap = side * 0.08;
     const qreal rim = qMax(1.0, side / 24);
     const qreal rowWidth = dots * diameter + (dots - 1) * gap;
     qreal x = (result.width() - rowWidth) / 2;
