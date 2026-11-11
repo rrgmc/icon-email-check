@@ -4,6 +4,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). A r
 
 ## [Unreleased]
 
+### Changed
+
+- The account dots on the tray icon are smaller.
+
 ## [1.0.0] - 2026-11-10
 
 ### Added

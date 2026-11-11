@@ -40,14 +40,14 @@ private Q_SLOTS:
         // One dot sits at the middle of the top edge.
         const QImage one = paintAccountDots(image, {Qt::red});
         QCOMPARE(one.size(), image.size());
-        QCOMPARE(QColor(one.pixel(16, 4)), QColor(Qt::red));
+        QCOMPARE(QColor(one.pixel(16, 3)), QColor(Qt::red));
         QCOMPARE(qAlpha(one.pixel(16, 28)), 0);
 
-        // Three dots fill the width, in their order; a fourth is left out.
+        // Three dots sit side by side, in their order; a fourth is left out.
         const QImage three = paintAccountDots(image, {Qt::red, Qt::green, Qt::blue, Qt::yellow});
-        QCOMPARE(QColor(three.pixel(5, 5)), QColor(Qt::red));
-        QCOMPARE(QColor(three.pixel(16, 5)), QColor(Qt::green));
-        QCOMPARE(QColor(three.pixel(26, 5)), QColor(Qt::blue));
+        QCOMPARE(QColor(three.pixel(7, 3)), QColor(Qt::red));
+        QCOMPARE(QColor(three.pixel(16, 3)), QColor(Qt::green));
+        QCOMPARE(QColor(three.pixel(25, 3)), QColor(Qt::blue));
     }
 
     // Saves the icons with dots, at tray sizes, when IEC_GRAB_DIR names a
@@ -81,14 +81,15 @@ private Q_SLOTS:
 
     void cutsTheDotsOutOfTheIcon()
     {
-        QImage image(32, 32, QImage::Format_ARGB32_Premultiplied);
+        // Large enough for the rim to cover whole pixels.
+        QImage image(64, 64, QImage::Format_ARGB32_Premultiplied);
         image.fill(Qt::white);
         const QImage dotted = paintAccountDots(image, {Qt::red});
         // The rim around the dot is transparent, and the rest is untouched.
-        const int diameter = qRound(32 * 0.3);
-        const int left = (32 - diameter) / 2;
-        QCOMPARE(qAlpha(dotted.pixel(left - 1, diameter / 2)), 0);
-        QCOMPARE(dotted.pixel(2, 30), image.pixel(2, 30));
+        const qreal diameter = 64 * 0.2;
+        const int left = int((64 - diameter) / 2);
+        QCOMPARE(qAlpha(dotted.pixel(left - 1, int(diameter / 2))), 0);
+        QCOMPARE(dotted.pixel(2, 60), image.pixel(2, 60));
     }
 };
 
