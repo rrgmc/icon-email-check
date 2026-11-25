@@ -13,3 +13,8 @@
 
 # Qt downloaded by tools/setup-qt when IEC_QT_ROOT is not set
 /.qt/
+
+# personal-rules: worktrees and machine-local notes never get committed.
+.claude/settings.local.json
+CLAUDE.local.md
+local/

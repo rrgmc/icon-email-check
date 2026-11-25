@@ -1,95 +1,79 @@
-# Builds, tests and packages every change on Windows, macOS and Linux. The
-# packages are kept for a week as the run's artifacts. They are not signed with
-# a Developer ID; release.yml makes the signed ones.
-#
-# master requires one check, "CI result". A pull request whose files are all
-# Markdown builds nothing, and "CI result" passes on one Linux runner within a
-# minute. Any other pull request builds on all three systems, and "CI result"
-# passes only when every build passed.
-
+# Managed by personal-rules (v0.3.1); /personal-rules:check compares it with the template. The
+# build is this repository's own build.yml (it builds in the Google client, checks the packages and
+# makes them), in place of the shared cpp-ci.yml.
 name: CI
-# Pull request runs lead with the number. Other runs keep GitHub's default
-# title, because an empty run-name means the default.
-run-name: ${{ github.event_name == 'pull_request' && format('#{0} {1}', github.event.pull_request.number, github.event.pull_request.title) || '' }}
+
+# Pull request runs are titled "PR #<number>: <title>"; an empty run-name keeps GitHub's default.
+run-name: >-
+  ${{ github.event_name == 'pull_request'
+  && format('PR #{0}: {1}', github.event.pull_request.number, github.event.pull_request.title)
+  || '' }}
 
 on:
   push:
     branches: [master]
-    paths-ignore: ['**.md']
+  # labeled/unlabeled: adding the no-changelog label re-runs the changelog check.
   pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
   workflow_dispatch:
-
-# A new push to a pull request cancels its run that is still going. Runs on
-# master all finish, since they fill the caches that pull requests read.
-concurrency:
-  group: ci-${{ github.event.pull_request.number || github.sha }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
 
+# A new push to a pull request cancels its older run; runs on master all finish, since they fill
+# the caches that pull requests read.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  # Decides whether the run builds. A pull request whose files all end in .md
-  # changes no build input, so code is false. Pushes and runs started by hand
-  # always build.
+  # docs, version or code, and which parts changed: docs-only and version-only changes skip builds.
   changes:
-    runs-on: ubuntu-24.04
-    permissions:
-      pull-requests: read
-    outputs:
-      code: ${{ steps.files.outputs.code }}
-    steps:
-      - name: Changed files
-        id: files
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-          PR: ${{ github.event.pull_request.number }}
-        run: |
-          if [ "$GITHUB_EVENT_NAME" != pull_request ]; then
-            echo "code=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          files=$(gh api --paginate "repos/$GH_REPO/pulls/$PR/files" --jq '.[].filename')
-          echo "$files"
-          if echo "$files" | grep -qvE '\.md$'; then
-            echo "code=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "Only Markdown files changed, so nothing is built."
-            echo "code=false" >> "$GITHUB_OUTPUT"
-          fi
+    uses: RangelReale/personal-ai-rules/.github/workflows/changes.yml@v0.3.1
+    with:
+      version-files: CMakeLists.txt
+      # More paths that never need a build (docs, *.md, .claude/ and editor settings are built in).
+      # make-icons.sh regenerates the committed icons by hand; no build runs it.
+      ignore: tools/make-icons.sh
+      # Pull requests build on Linux only, unless they change code that only Windows or macOS
+      # builds: the platform code, packaging and the scripts the other systems run.
+      full-paths: >-
+        src/platform/ cmake/ CMakeLists.txt resources/app/ tools/build.ps1 tools/setup-qt.ps1
+        tools/setup-qt.sh tools/sign-macos.sh tools/package-macos.sh tools/notarise-macos.sh
+        tools/check-package.py
 
   build:
     needs: changes
-    if: needs.changes.outputs.code != 'false'
+    if: needs.changes.outputs.main == 'true'
     uses: ./.github/workflows/build.yml
+    with:
+      full: ${{ needs.changes.outputs.full }}  # all three systems only when it matters
     # Only the Google client, which the app builds in.
     secrets:
       IEC_GOOGLE_CLIENT_ID: ${{ secrets.IEC_GOOGLE_CLIENT_ID }}
       IEC_GOOGLE_CLIENT_SECRET: ${{ secrets.IEC_GOOGLE_CLIENT_SECRET }}
 
-  # The one check that master requires. It runs whatever happened before it,
-  # and passes when the files were read and the builds passed or were not
-  # needed. A failed, cancelled or missing build fails it.
-  result:
+  # Fragments in changelog.d/.
+  changelog:
+    needs: changes
+    if: github.event_name == 'pull_request'
+    uses: RangelReale/personal-ai-rules/.github/workflows/changelog-check.yml@v0.3.1
+    with:
+      kind: ${{ needs.changes.outputs.kind }}
+
+  # The only check the ruleset requires. Skipped jobs pass, so jobs can be added without touching
+  # the ruleset: list every other job in needs.
+  ci-result:
     name: CI result
-    needs: [changes, build]
+    needs: [changes, build, changelog]
     if: always()
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
     steps:
-      - name: Check the jobs
-        env:
-          CHANGES: ${{ needs.changes.result }}
-          CODE: ${{ needs.changes.outputs.code }}
-          BUILD: ${{ needs.build.result }}
+      - env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
         run: |
-          echo "changes: $CHANGES, code: $CODE, build: $BUILD"
-          if [ "$CHANGES" != success ]; then
-            echo "::error::The changed files could not be read."
-            exit 1
-          fi
-          if [ "$BUILD" = success ] || { [ "$CODE" = false ] && [ "$BUILD" = skipped ]; }; then
-            exit 0
-          fi
-          echo "::error::The build did not pass: $BUILD."
-          exit 1
+          echo "Results: $RESULTS"
+          for result in $RESULTS; do
+            case "$result" in success | skipped) ;; *) exit 1 ;; esac
+          done

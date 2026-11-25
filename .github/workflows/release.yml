@@ -1,89 +1,51 @@
-# Pushing a tag vX.Y.Z publishes the release, and vX.Y.Z-rc.N a prerelease,
-# with the Windows setup, the macOS disk image and the Linux .deb package. The
-# tag gives the version. The build jobs hold no secrets. On macOS, a separate
-# job signs and notarises the disk image with the Developer ID, from the
-# secrets of the environment "release". To redo a release, run this workflow
-# by hand from its tag, under "Use workflow from".
-
+# Managed by personal-rules (v0.3.1); /personal-rules:check compares it with the template. The
+# build is this repository's own build.yml, in place of the shared cpp-release.yml.
 name: Release
+
+# Pushing a tag vX.Y.Z (or vX.Y.Z-rc.N, a prerelease) checks it, builds the Windows setup, the
+# macOS disk image and the Linux .deb package, and publishes the GitHub release. The tag gives the
+# version. The build jobs hold no signing secrets: on macOS, a separate job signs and notarises the
+# disk image with the Developer ID, from the secrets of the environment "release". To redo a
+# failed run, re-run its failed jobs, or run this workflow by hand from its tag.
 run-name: Release ${{ github.ref_name }}
 
 on:
   push:
-    tags:
-      - 'v[0-9]*.[0-9]*.[0-9]*'
+    tags: ['v[0-9]*.[0-9]*.[0-9]*']
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+
 jobs:
-  build:
+  # The tag is vX.Y.Z or a prerelease, and on master. The build passes the tag's version to CMake
+  # (IEC_VERSION), so no manifest is compared.
+  check:
     if: github.ref_type == 'tag'
+    uses: RangelReale/personal-ai-rules/.github/workflows/release-check.yml@v0.3.1
+
+  build:
+    needs: check
     uses: ./.github/workflows/build.yml
     with:
-      release-tag: ${{ github.ref_name }}
+      release-tag: ${{ needs.check.outputs.tag }}
       macos-signing: developer-id
-    # The build jobs read the Google client; only the signing job reads the
-    # signing secrets.
+    # The build jobs read the Google client; only the signing job reads the signing secrets.
     secrets: inherit
 
+  # Attaches the release-* artifacts with a SHA256SUMS.txt; the notes are the version's section of
+  # CHANGELOG.md.
   publish:
-    needs: build
-    runs-on: ubuntu-24.04
+    needs: [check, build]
     permissions:
       contents: write
-    steps:
-      - uses: actions/download-artifact@v8
-        with:
-          pattern: icon-email-check-*
-          merge-multiple: true
-          path: packages
-
-      # Only the changelog, for the release's notes.
-      - uses: actions/checkout@v7
-        with:
-          sparse-checkout: CHANGELOG.md
-          sparse-checkout-cone-mode: false
-          path: app
-          persist-credentials: false
-
-      - name: Publish the release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-          TAG: ${{ github.ref_name }}
-        run: |
-          ls -l packages
-          count=$(find packages -type f | wc -l)
-          if [ "$count" -ne 3 ]; then
-            echo "::error::Expected 3 packages, found $count."
-            exit 1
-          fi
-          if ! gh release view "$TAG" > /dev/null 2>&1; then
-            flags=(--verify-tag)
-            if [[ "$TAG" == *-rc.* ]]; then
-              flags+=(--prerelease)
-            fi
-            # The notes are the version's section of CHANGELOG.md, in the
-            # format of Keep a Changelog, or else GitHub's list of changes. A
-            # prerelease vX.Y.Z-rc.N takes the section of X.Y.Z.
-            version="${TAG#v}"
-            version="${version%%-*}"
-            notes="$RUNNER_TEMP/notes.md"
-            if [ -f app/CHANGELOG.md ]; then
-              awk -v heading="## [$version]" '
-                index($0, heading) == 1 { on = 1; next }
-                on && /^## \[/ { exit }
-                on && /^\[[^]]+\]: / { next }
-                on { print }
-              ' app/CHANGELOG.md > "$notes"
-            fi
-            if [ -s "$notes" ] && grep -q '[^[:space:]]' "$notes"; then
-              flags+=(--notes-file "$notes")
-            else
-              flags+=(--generate-notes)
-            fi
-            gh release create "$TAG" --title "Icon Email Check $TAG" "${flags[@]}"
-          fi
-          gh release upload "$TAG" packages/* --clobber
+    uses: RangelReale/personal-ai-rules/.github/workflows/release-publish.yml@v0.3.1
+    with:
+      tag: ${{ needs.check.outputs.tag }}
+      version: ${{ needs.check.outputs.version }}
+      prerelease: ${{ needs.check.outputs.prerelease }}
+      title: Icon Email Check ${{ needs.check.outputs.tag }}
