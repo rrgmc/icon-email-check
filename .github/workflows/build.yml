@@ -1,5 +1,5 @@
 # Builds, tests and packages the app on Windows, macOS and Linux. ci.yml calls
-# it for every change, and release.yml for a tag:
+# it for every change that needs a build, and release.yml for a tag:
 #
 #   jobs:
 #     build:
@@ -7,6 +7,7 @@
 #       with:
 #         release-tag: ${{ github.ref_name }}   # gives the version
 #         macos-signing: developer-id           # sign and notarise
+#         full: 'false'                         # Linux only, for a quick pull request check
 #       secrets: inherit
 #
 # The build jobs hold only the Google OAuth client, which the app needs at
@@ -14,7 +15,8 @@
 # the disk image itself, signed ad hoc, unless macos-signing is developer-id.
 # Then a separate job signs the finished bundle with the Developer ID and
 # makes the disk image; it runs nothing from the build, and only it reads the
-# signing secrets. The packages are the artifacts icon-email-check-<OS>.
+# signing secrets. The packages are the artifacts release-<OS>, which the
+# release attaches.
 
 name: Build
 
@@ -29,6 +31,10 @@ on:
         description: none signs ad hoc. developer-id signs and notarises with the secrets of the environment "release", or signs ad hoc with a warning when they are missing
         type: string
         default: none
+      full:
+        description: "'false' builds on Linux only (pull requests that cannot break one system alone); anything else builds on Windows, macOS and Linux"
+        type: string
+        default: 'true'
     secrets:
       IEC_GOOGLE_CLIENT_ID:
         description: The Google OAuth client ID to build in. Without it, the app has no built-in client
@@ -99,7 +105,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2022, macos-15, ubuntu-24.04]
+        os: ${{ fromJSON(inputs.full == 'false' && '["ubuntu-24.04"]' || '["windows-2022", "macos-15", "ubuntu-24.04"]') }}
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
       # CMake reads these at configure time. A pull request from a fork gets
@@ -202,7 +208,7 @@ jobs:
       - uses: actions/upload-artifact@v7
         if: runner.os != 'macOS' || inputs.macos-signing != 'developer-id'
         with:
-          name: icon-email-check-${{ runner.os }}
+          name: release-${{ runner.os }}
           path: |
             build/ci/icon-email-check-*-win64.exe
             build/ci/icon-email-check-*-macos.dmg
@@ -305,7 +311,7 @@ jobs:
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: icon-email-check-macOS
+          name: release-macOS
           path: ${{ env.DMG }}
           if-no-files-found: error
           retention-days: 7

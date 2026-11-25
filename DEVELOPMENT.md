@@ -60,16 +60,18 @@ A desktop app's client secret is not a secret: Google expects it to ship inside 
 
 ## Continuous integration and releases
 
-`.github/workflows/ci.yml` builds, tests and packages every push to `master` and every pull request on Windows, macOS and Linux. A push or pull request that touches only Markdown files builds nothing. `master` requires one check, **CI result**, which passes when the three builds pass, or right away when nothing needed building. Each run keeps its packages as artifacts for a week. They are not signed with a Developer ID, so on macOS the app opens only after **Open Anyway** in **System Settings > Privacy & Security**.
+`.github/workflows/ci.yml` builds, tests and packages with `.github/workflows/build.yml`, and runs only what a change needs (the shared `changes` workflow of [personal-ai-rules](https://github.com/RangelReale/personal-ai-rules) decides). Documentation, `docs/` and `tools/make-icons.sh` build nothing. A pull request builds on Linux only, unless it changes the platform code, packaging or the scripts of the other systems (the `full-paths` in `ci.yml`), or a workflow; pushes to `master` build on Windows, macOS and Linux. `master` requires one check, **CI result**, which passes when every job that ran passed. Each run keeps its packages as artifacts for a week. They are not signed with a Developer ID, so on macOS the app opens only after **Open Anyway** in **System Settings > Privacy & Security**.
 
-Pushing a tag `vX.Y.Z` publishes a release with the three packages, and `vX.Y.Z-rc.N` a prerelease. The tag gives the version, so it need not match `IEC_VERSION` in `CMakeLists.txt`. The release notes are the version's section of [CHANGELOG.md](CHANGELOG.md), or GitHub's list of changes when it has none.
+Every pull request that changes what people who use the app notice adds a fragment to [changelog.d/](changelog.d/README.md); others get the label `no-changelog`. Never edit `CHANGELOG.md` by hand: a release merges the fragments into it.
+
+A release first merges the version change through a pull request: `IEC_VERSION` in `CMakeLists.txt` and the fragments merged into `CHANGELOG.md`. Then pushing a tag `vX.Y.Z` from `master` publishes a release with the three packages and a `SHA256SUMS.txt`, and `vX.Y.Z-rc.N` a prerelease. The tag must be on `master`, and it gives the version. The release notes are the version's section of [CHANGELOG.md](CHANGELOG.md), or GitHub's list of changes when it has none (as for a prerelease).
 
 ```sh
 git tag v0.1.0
 git push origin v0.1.0
 ```
 
-To make the release again, run the Release workflow by hand from its tag, under **Use workflow from**.
+To make the release again, re-run its failed jobs, or run the Release workflow by hand from its tag, under **Use workflow from**.
 
 The build jobs hold no signing secrets, only the Google client. In CI the macOS build job makes the disk image itself, signed ad hoc. For a release, a separate macOS job signs the finished bundle with a Developer ID and notarises the disk image, so no code the build ran can reach the certificate. It reads these secrets from the GitHub environment `release`; without them it signs ad hoc and the run shows a warning:
 
