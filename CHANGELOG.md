@@ -4,6 +4,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). A r
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-25
+
+### Added
+
+- Each release includes a `SHA256SUMS.txt` with the SHA-256 checksum of each package, to check a download against.
+
 ## [1.1.0] - 2026-11-11
 
 ### Added
